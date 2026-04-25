@@ -1,0 +1,62 @@
+@import './partials/rest.css';
+@import './partials/customAntd.css';
+@import './partials/layout.css';
+@import './partials/core.css';
+
+@import './partials/auth.css';
+@import './partials/navigation.css';
+@import './partials/header.css';
+@import './partials/sidePanel.css';
+@import './partials/collapseBox.css';
+@import './partials/erp.css';
+
+/* ================= GLOBAL DARK UI FIX ================= */
+
+body {
+  background: #020617 !important;
+  color: #e2e8f0;
+}
+
+#root {
+  background: #020617 !important;
+}
+
+/* Remove any accidental white areas */
+.ant-layout {
+  background: #020617 !important;
+}
+
+/* Improve font rendering everywhere */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+
+
+/* ================= SOC GLOBAL THEME ================= */
+
+:root {
+  --bg: #020617;
+  --panel: rgba(15, 23, 42, 0.92);
+  --border: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #14b8a6;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --success: #10b981;
+}
+
+body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* kill all white bleed */
+.ant-layout,
+#root {
+  background: var(--bg) !important;
+}
