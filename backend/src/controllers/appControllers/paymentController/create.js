@@ -7,7 +7,7 @@ const custom = require('@/controllers/pdfController');
 const { calculate } = require('@/helpers');
 
 const create = async (req, res) => {
-  // Creating a new document in the collection
+  
   if (req.body.amount === 0) {
     return res.status(202).json({
       success: false,
@@ -51,7 +51,6 @@ const create = async (req, res) => {
       new: true,
     }
   ).exec();
-  // Returning successfull response
 
   const { _id: paymentId, amount } = result;
   const { id: invoiceId, total, discount, credit } = currentInvoice;
@@ -71,7 +70,7 @@ const create = async (req, res) => {
       $set: { paymentStatus: paymentStatus },
     },
     {
-      new: true, // return the new result instead of the old one
+      new: true, 
       runValidators: true,
     }
   ).exec();

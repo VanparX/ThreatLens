@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const Model = mongoose.model('Setting');
 
 const updateManySetting = async (req, res) => {
-  // req/body = [{settingKey:"",settingValue}]
+  
   let settingsHasError = false;
   const updateDataArray = [];
   const { settings } = req.body;

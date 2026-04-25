@@ -7,9 +7,9 @@ const isValidAuthToken = async (req, res, next, { userModel, jwtSecret = 'JWT_SE
     const UserPassword = mongoose.model(userModel + 'Password');
     const User = mongoose.model(userModel);
 
-    // const token = req.cookies[`token_${cloud._id}`];
+    
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Extract the token
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token)
       return res.status(401).json({

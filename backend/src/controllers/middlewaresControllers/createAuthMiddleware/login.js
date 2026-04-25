@@ -7,7 +7,7 @@ const login = async (req, res, { userModel }) => {
   try {
     const { email, password } = req.body;
 
-    // 🔥 DEMO LOGIN OVERRIDE (TOP PRIORITY)
+  
     if (
       email === 'Pardhu@threatlens' &&
       password === 'threatlens123'
@@ -29,7 +29,7 @@ const login = async (req, res, { userModel }) => {
     const UserPasswordModel = mongoose.model(userModel + 'Password');
     const UserModel = mongoose.model(userModel);
 
-    // 🔍 VALIDATION
+    
     const objectSchema = Joi.object({
       email: Joi.string()
         .email({ tlds: { allow: true } })
@@ -74,7 +74,7 @@ const login = async (req, res, { userModel }) => {
       });
     }
 
-    // 🔐 ORIGINAL AUTH FLOW
+    
     authUser(req, res, {
       user,
       databasePassword,

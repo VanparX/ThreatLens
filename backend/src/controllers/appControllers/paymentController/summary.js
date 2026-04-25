@@ -27,21 +27,18 @@ const summary = async (req, res) => {
   let startDate = currentDate.clone().startOf(defaultType);
   let endDate = currentDate.clone().endOf(defaultType);
 
-  // get total amount of invoices
+  
   const result = await Model.aggregate([
     {
       $match: {
         removed: false,
 
-        // date: {
-        //   $gte: startDate.toDate(),
-        //   $lte: endDate.toDate(),
-        // },
+        
       },
     },
     {
       $group: {
-        _id: null, // Group all documents into a single group
+        _id: null, 
         count: {
           $sum: 1,
         },
@@ -52,7 +49,7 @@ const summary = async (req, res) => {
     },
     {
       $project: {
-        _id: 0, // Exclude _id from the result
+        _id: 0,
         count: 1,
         total: 1,
       },

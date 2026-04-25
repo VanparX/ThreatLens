@@ -27,7 +27,7 @@ const updateBySettingKey = async (req, res) => {
       settingValue,
     },
     {
-      new: true, // return the new result instead of the old one
+      new: true, 
       runValidators: true,
     }
   ).exec();

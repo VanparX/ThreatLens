@@ -19,7 +19,7 @@ const paginatedList = async (req, res) => {
     fields.$or.push({ [field]: { $regex: new RegExp(req.query.q, 'i') } });
   }
 
-  //  Query the database for a list of all results
+  
   const resultsPromise = Model.find({
     removed: false,
 
@@ -32,7 +32,7 @@ const paginatedList = async (req, res) => {
     .populate('createdBy', 'name')
     .exec();
 
-  // Counting the total documents
+  
   const countPromise = Model.countDocuments({
     removed: false,
 
@@ -40,12 +40,12 @@ const paginatedList = async (req, res) => {
     ...fields,
   });
 
-  // Resolving both promises
+  
   const [result, count] = await Promise.all([resultsPromise, countPromise]);
-  // Calculating total pages
+  
   const pages = Math.ceil(count / limit);
 
-  // Getting Pagination Object
+  
   const pagination = { page, pages, count };
   if (count > 0) {
     return res.status(200).json({

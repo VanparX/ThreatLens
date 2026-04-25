@@ -7,7 +7,7 @@ const schema = Joi.object({
   notes: Joi.string().allow(''),
   expiredDate: Joi.date().required(),
   date: Joi.date().required(),
-  // array cannot be empty
+  
   items: Joi.array()
     .items(
       Joi.object({

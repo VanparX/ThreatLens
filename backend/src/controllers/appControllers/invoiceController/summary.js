@@ -34,10 +34,6 @@ const summary = async (req, res) => {
     {
       $match: {
         removed: false,
-        // date: {
-        //   $gte: startDate.toDate(),
-        //   $lte: endDate.toDate(),
-        // },
       },
     },
     {

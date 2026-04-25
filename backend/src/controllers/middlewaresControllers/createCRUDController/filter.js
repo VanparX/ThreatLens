@@ -19,7 +19,7 @@ const filter = async (Model, req, res) => {
       message: 'No document found ',
     });
   } else {
-    // Return success resposne
+
     return res.status(200).json({
       success: true,
       result,

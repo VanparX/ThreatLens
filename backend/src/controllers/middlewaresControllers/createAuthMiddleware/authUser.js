@@ -28,15 +28,7 @@ const authUser = async (req, res, { user, databasePassword, password, UserPasswo
       }
     ).exec();
 
-    // .cookie(`token_${user.cloud}`, token, {
-    //     maxAge: req.body.remember ? 365 * 24 * 60 * 60 * 1000 : null,
-    //     sameSite: 'None',
-    //     httpOnly: true,
-    //     secure: true,
-    //     domain: req.hostname,
-    //     path: '/',
-    //     Partitioned: true,
-    //   })
+    
     res.status(200).json({
       success: true,
       result: {

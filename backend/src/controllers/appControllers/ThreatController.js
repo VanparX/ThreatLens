@@ -1,6 +1,6 @@
 const Threat = require('../../models/appModels/Threat');
 
-// CREATE Threat
+
 const createThreat = async (req, res) => {
   try {
     const threat = new Threat(req.body);
@@ -11,7 +11,7 @@ const createThreat = async (req, res) => {
   }
 };
 
-// GET all Threats
+
 const getThreats = async (req, res) => {
   try {
     const threats = await Threat.find().sort({ createdAt: -1 });

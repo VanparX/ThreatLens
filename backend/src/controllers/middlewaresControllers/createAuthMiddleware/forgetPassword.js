@@ -14,7 +14,7 @@ const forgetPassword = async (req, res, { userModel }) => {
   const User = mongoose.model(userModel);
   const { email } = req.body;
 
-  // validate
+
   const objectSchema = Joi.object({
     email: Joi.string()
       .email({ tlds: { allow: true } })
@@ -35,7 +35,7 @@ const forgetPassword = async (req, res, { userModel }) => {
   const user = await User.findOne({ email: email, removed: false });
   const databasePassword = await UserPassword.findOne({ user: user._id, removed: false });
 
-  // console.log(user);
+  
   if (!user)
     return res.status(404).json({
       success: false,

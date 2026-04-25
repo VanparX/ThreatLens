@@ -14,7 +14,7 @@ const update = async (req, res) => {
       message: `The Minimum Amount couldn't be 0`,
     });
   }
-  // Find document by id and updates with the required fields
+  
   const previousPayment = await Model.findOne({
     _id: req.params.id,
     removed: false,
@@ -59,7 +59,7 @@ const update = async (req, res) => {
     { _id: req.params.id, removed: false },
     { $set: updates },
     {
-      new: true, // return the new result instead of the old one
+      new: true, 
     }
   ).exec();
 
@@ -72,7 +72,7 @@ const update = async (req, res) => {
       },
     },
     {
-      new: true, // return the new result instead of the old one
+      new: true, 
     }
   ).exec();
 
