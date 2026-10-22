@@ -1,0 +1,41 @@
+package com.threatlens.audit.model;
+
+public enum AuditAction {
+    // Auth
+    USER_LOGIN,
+    USER_LOGOUT,
+    USER_REGISTERED,
+    USER_PASSWORD_CHANGED,
+    USER_ROLE_CHANGED,
+    USER_DISABLED,
+    USER_ENABLED,
+
+    // Rules
+    RULE_CREATED,
+    RULE_UPDATED,
+    RULE_ENABLED,
+    RULE_DISABLED,
+    RULE_DELETED,
+
+    // Alerts
+    ALERT_CREATED,
+    ALERT_ACKNOWLEDGED,
+    ALERT_ASSIGNED,
+    ALERT_RESOLVED,
+    ALERT_CLOSED,
+
+    // Incidents
+    INCIDENT_CREATED,
+    INCIDENT_UPDATED,
+    INCIDENT_STATUS_CHANGED,
+    INCIDENT_ASSIGNED,
+    INCIDENT_NOTE_ADDED,
+    INCIDENT_RESOLVED,
+    INCIDENT_CLOSED,
+
+    // Response actions
+    RESPONSE_ACTION_RECORDED,
+
+    // Admin
+    ADMIN_ACTION
+}

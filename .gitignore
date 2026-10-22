@@ -57,3 +57,6 @@ frontend/build
 # Misc
 # =====================
 coverage/
+
+# ThreatLens root environment variables
+.env
