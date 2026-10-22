@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Shield, Lock, User, KeyRound, AlertCircle, ArrowRight } from 'lucide-react';
+import { Shield, Lock, User, KeyRound, AlertCircle, ArrowRight, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Login() {
   const { login, loading } = useAuth();
+  const { toggleTheme, isDark } = useTheme();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('ChangeMe!Admin123');
   const [error, setError] = useState('');
@@ -41,17 +43,40 @@ export default function Login() {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundImage: 'linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px)',
         backgroundSize: '40px 40px',
         pointerEvents: 'none'
       }} />
+
+      {/* Top Right Theme Toggle */}
+      <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 20 }}>
+        <button
+          onClick={toggleTheme}
+          title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          style={{
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '8px',
+            color: isDark ? '#fbbf24' : '#0284c7',
+            padding: '0.5rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: 'var(--card-shadow)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </div>
 
       <div className="soc-card soc-card-glow" style={{
         maxWidth: '440px',
         width: '100%',
         padding: '2.5rem',
-        border: '1px solid rgba(0, 240, 255, 0.3)',
-        background: 'rgba(18, 26, 43, 0.85)',
+        border: '1px solid var(--border-color)',
+        background: 'var(--bg-surface)',
         backdropFilter: 'blur(16px)',
         position: 'relative',
         zIndex: 10
@@ -73,7 +98,7 @@ export default function Login() {
             <Shield size={32} color="var(--neon-cyan)" />
           </div>
 
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             Threat<span style={{ color: 'var(--neon-cyan)' }}>Lens</span>
           </h1>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
@@ -162,8 +187,8 @@ export default function Login() {
             type="button"
             onClick={() => fillDemoCreds('admin', 'ChangeMe!Admin123')}
             style={{
-              background: 'rgba(0, 240, 255, 0.08)',
-              border: '1px solid rgba(0, 240, 255, 0.25)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--neon-cyan)',
               color: 'var(--neon-cyan)',
               padding: '0.35rem 0.75rem',
               borderRadius: '6px',

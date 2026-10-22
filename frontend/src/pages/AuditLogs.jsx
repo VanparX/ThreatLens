@@ -41,7 +41,7 @@ export default function AuditLogs() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <FileText color="var(--neon-cyan)" size={24} />
             <span>Immutable SOC Operator Audit Trail</span>
           </h1>
@@ -97,11 +97,11 @@ export default function AuditLogs() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color-subtle)' }}>
                     <td style={{ padding: '0.7rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                     </td>
-                    <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: '#fff' }}>
+                    <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <User size={13} color="var(--neon-cyan)" />
                         {log.actor || 'SYSTEM'}
@@ -121,7 +121,7 @@ export default function AuditLogs() {
                       </span>
                     </td>
                     <td style={{ padding: '0.7rem 1rem', color: 'var(--text-secondary)' }}>
-                      <span style={{ color: '#fff', fontWeight: 500 }}>{log.resourceType}</span>
+                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{log.resourceType}</span>
                       {log.resourceId && (
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-muted)', marginLeft: '0.35rem' }}>
                           #{log.resourceId.substring(0, 8)}

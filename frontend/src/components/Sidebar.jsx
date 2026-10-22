@@ -57,8 +57,8 @@ export default function Sidebar({ activeTab, onSelectTab }) {
                   justifyContent: 'space-between',
                   padding: '0.7rem 0.85rem',
                   borderRadius: '9px',
-                  background: isActive ? 'rgba(0, 240, 255, 0.08)' : 'transparent',
-                  border: isActive ? '1px solid rgba(0, 240, 255, 0.35)' : '1px solid transparent',
+                  background: isActive ? 'rgba(6, 182, 212, 0.12)' : 'transparent',
+                  border: isActive ? '1px solid var(--neon-cyan)' : '1px solid transparent',
                   color: isActive ? 'var(--neon-cyan)' : 'var(--text-secondary)',
                   fontWeight: isActive ? 600 : 500,
                   fontSize: '0.86rem',
@@ -74,8 +74,9 @@ export default function Sidebar({ activeTab, onSelectTab }) {
                 {item.badge && (
                   <span style={{
                     fontSize: '0.62rem',
-                    background: 'rgba(16, 185, 129, 0.2)',
-                    color: 'var(--neon-emerald)',
+                    background: 'var(--badge-low-bg)',
+                    color: 'var(--badge-low-text)',
+                    border: '1px solid var(--badge-low-border)',
                     padding: '0.1rem 0.4rem',
                     borderRadius: '4px',
                     fontWeight: 700,
@@ -92,12 +93,13 @@ export default function Sidebar({ activeTab, onSelectTab }) {
 
       {/* Footer Info Box */}
       <div style={{
-        background: 'rgba(255, 255, 255, 0.02)',
+        background: 'var(--bg-surface)',
         border: '1px solid var(--border-color)',
         borderRadius: '8px',
         padding: '0.85rem',
         fontSize: '0.72rem',
-        color: 'var(--text-muted)'
+        color: 'var(--text-muted)',
+        boxShadow: 'var(--card-shadow)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.3rem' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--neon-cyan)' }} />

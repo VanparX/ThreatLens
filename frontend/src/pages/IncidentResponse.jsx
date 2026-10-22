@@ -131,7 +131,7 @@ export default function IncidentResponse() {
       {/* Title & Top Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Flame color="var(--neon-rose)" size={24} />
             <span>Incident Response & Containment Command</span>
           </h1>
@@ -212,7 +212,7 @@ export default function IncidentResponse() {
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                     {inc.title}
                   </h3>
 
@@ -248,7 +248,7 @@ export default function IncidentResponse() {
                     CASE #{selectedIncident.id}
                   </span>
                 </div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff', marginTop: '0.3rem' }}>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.3rem' }}>
                   {selectedIncident.title}
                 </h2>
               </div>
@@ -291,7 +291,7 @@ export default function IncidentResponse() {
             <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
                 <Shield size={16} color="var(--neon-rose)" />
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', margin: 0 }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                   Automated Containment Playbooks
                 </h4>
               </div>
@@ -345,7 +345,7 @@ export default function IncidentResponse() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '160px', overflowY: 'auto' }}>
                   {selectedIncident.responseActions.map((act, i) => (
                     <div key={i} style={{ background: 'var(--bg-secondary)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', borderLeft: '3px solid var(--neon-emerald)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: '#fff' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text-primary)' }}>
                         <span>{act.actionType} → {act.target}</span>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>{act.executedBy || 'SOAR'}</span>
                       </div>
@@ -399,7 +399,7 @@ export default function IncidentResponse() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Flame size={20} color="var(--neon-rose)" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Open Incident Case
                 </h3>
               </div>

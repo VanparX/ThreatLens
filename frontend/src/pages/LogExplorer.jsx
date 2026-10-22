@@ -146,7 +146,7 @@ export default function LogExplorer() {
       {/* Title & Action Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Terminal color="var(--neon-cyan)" size={24} />
             <span>Real-Time Log Stream & Attack Simulator</span>
           </h1>
@@ -177,11 +177,11 @@ export default function LogExplorer() {
       </div>
 
       {/* Interactive Cyber Attack Simulation Hub */}
-      <div className="soc-card" style={{ background: 'linear-gradient(135deg, rgba(18, 26, 43, 0.8), rgba(13, 19, 31, 0.95))', border: '1px solid rgba(0, 240, 255, 0.25)' }}>
+      <div className="soc-card" style={{ background: 'var(--simulator-card-bg)', border: '1px solid var(--border-color)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Flame size={18} color="var(--neon-rose)" />
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff' }}>Adversary Attack Simulator</h3>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>Adversary Attack Simulator</h3>
             <span style={{ fontSize: '0.68rem', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--neon-rose)', padding: '0.1rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
               Live SIEM Testing
             </span>
@@ -402,7 +402,7 @@ export default function LogExplorer() {
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)', transition: 'background 0.15s' }}>
+                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color-subtle)', transition: 'background 0.15s' }}>
                     <td style={{ padding: '0.7rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'N/A'}
                     </td>
@@ -411,7 +411,7 @@ export default function LogExplorer() {
                         {log.severity}
                       </span>
                     </td>
-                    <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: '#fff' }}>
+                    <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {log.eventType}
                     </td>
                     <td style={{ padding: '0.7rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--neon-cyan)' }}>

@@ -60,7 +60,7 @@ export default function Dashboard({ onNavigate }) {
       {/* Top Banner & Control Bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Activity color="var(--neon-cyan)" size={24} />
             <span>SOC Telemetry & Threat Posture</span>
           </h1>
@@ -100,7 +100,7 @@ export default function Dashboard({ onNavigate }) {
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Ingested Logs
             </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
               {stats?.totalLogs?.toLocaleString() || 0}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--neon-cyan)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -119,7 +119,7 @@ export default function Dashboard({ onNavigate }) {
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Threat Detections
             </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
               {stats?.totalDetections || 0}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
@@ -137,7 +137,7 @@ export default function Dashboard({ onNavigate }) {
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
               Active Alerts
             </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: stats?.openAlerts > 0 ? 'var(--neon-amber)' : '#fff', marginTop: '0.2rem' }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: stats?.openAlerts > 0 ? 'var(--neon-amber)' : 'var(--text-primary)', marginTop: '0.2rem' }}>
               {stats?.openAlerts || 0}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
@@ -173,14 +173,14 @@ export default function Dashboard({ onNavigate }) {
         {/* Posture Score & Health Card */}
         <div className="soc-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>Security Posture Score</h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Security Posture Score</h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SIEM Composite Index</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '1rem 0' }}>
             <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="130" height="130" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#1f293d" strokeWidth="8" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--chart-track)" strokeWidth="8" />
                 <circle
                   cx="50"
                   cy="50"
@@ -210,7 +210,7 @@ export default function Dashboard({ onNavigate }) {
                 ) : (
                   <ShieldAlert size={18} color={getScoreColor(postureScore)} />
                 )}
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {postureScore >= 80 ? 'DEFENSE SECURE' : postureScore >= 50 ? 'ELEVATED RISK' : 'CRITICAL THREAT'}
                 </span>
               </div>
@@ -229,7 +229,7 @@ export default function Dashboard({ onNavigate }) {
         {/* Severity Distribution */}
         <div className="soc-card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>Alert Severity Distribution</h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Alert Severity Distribution</h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Categorized Alerts</span>
           </div>
 
@@ -248,7 +248,7 @@ export default function Dashboard({ onNavigate }) {
                     <span style={{ fontWeight: 600, color: item.color }}>{item.level}</span>
                     <span style={{ color: 'var(--text-secondary)' }}>{item.count} alerts ({pct}%)</span>
                   </div>
-                  <div style={{ height: '7px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ height: '7px', background: 'var(--progress-track)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: item.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function Dashboard({ onNavigate }) {
       <div className="soc-card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>Recent SOC Escalations</h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Recent SOC Escalations</h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Latest threats flagged by the detection engine</p>
           </div>
           <button
@@ -301,8 +301,8 @@ export default function Dashboard({ onNavigate }) {
               </thead>
               <tbody>
                 {stats.recentAlerts.map((alert, idx) => (
-                  <tr key={alert.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                    <td style={{ padding: '0.75rem 0.85rem', color: '#fff', fontWeight: 500 }}>
+                  <tr key={alert.id || idx} style={{ borderBottom: '1px solid var(--border-color-subtle)' }}>
+                    <td style={{ padding: '0.75rem 0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                       {alert.title}
                     </td>
                     <td style={{ padding: '0.75rem 0.85rem' }}>

@@ -98,7 +98,7 @@ export default function RulesManager() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Sliders color="var(--neon-cyan)" size={24} />
             <span>Detection Rule Engine Configuration</span>
           </h1>
@@ -139,7 +139,7 @@ export default function RulesManager() {
             <Layers size={24} color="var(--neon-cyan)" />
           </div>
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
               Active Correlation Status: {activeCount} of {rules.length} Rules Armed
             </h3>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -182,7 +182,7 @@ export default function RulesManager() {
                 </span>
               </div>
 
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', margin: '0 0 0.35rem 0' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 0.35rem 0' }}>
                 {rule.name}
               </h3>
 
@@ -197,7 +197,7 @@ export default function RulesManager() {
                 Matching Criteria:
               </div>
               {rule.condition?.eventTypes && (
-                <div>Events: <strong style={{ color: '#fff' }}>{rule.condition.eventTypes.join(', ')}</strong></div>
+                <div>Events: <strong style={{ color: 'var(--text-primary)' }}>{rule.condition.eventTypes.join(', ')}</strong></div>
               )}
               {rule.condition?.thresholdCount && (
                 <div>Threshold: <strong style={{ color: 'var(--neon-amber)' }}>{rule.condition.thresholdCount} events</strong> in {rule.condition.thresholdWindowSeconds}s</div>
@@ -244,7 +244,7 @@ export default function RulesManager() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Sliders size={20} color="var(--neon-cyan)" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                   Deploy Detection Rule
                 </h3>
               </div>

@@ -100,7 +100,7 @@ export default function AlertCenter({ onNavigate }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <AlertTriangle color="var(--neon-amber)" size={24} />
             <span>SOC Alert Management & Triage Center</span>
           </h1>
@@ -190,7 +190,8 @@ export default function AlertCenter({ onNavigate }) {
                       <span style={{
                         padding: '0.15rem 0.45rem',
                         borderRadius: '4px',
-                        background: 'rgba(255, 255, 255, 0.05)',
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
                         color: alert.status === 'OPEN' ? 'var(--neon-amber)' : alert.status === 'RESOLVED' ? 'var(--neon-emerald)' : 'var(--neon-cyan)',
                         fontWeight: 600
                       }}>
@@ -199,7 +200,7 @@ export default function AlertCenter({ onNavigate }) {
                     </div>
                   </div>
 
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', margin: 0 }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                     {alert.title}
                   </h3>
 
@@ -232,7 +233,7 @@ export default function AlertCenter({ onNavigate }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <ShieldAlert size={18} color="var(--neon-cyan)" />
-                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', margin: 0 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
                   Alert Investigation
                 </h3>
               </div>
@@ -247,7 +248,7 @@ export default function AlertCenter({ onNavigate }) {
             <div style={{ fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Alert Title</span>
-                <div style={{ color: '#fff', fontWeight: 600 }}>{selectedAlert.title}</div>
+                <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{selectedAlert.title}</div>
               </div>
 
               <div>
@@ -260,11 +261,11 @@ export default function AlertCenter({ onNavigate }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Assigned Responder</span>
-                  <div style={{ color: '#fff' }}>{selectedAlert.assignedTo || 'Unassigned'}</div>
+                  <div style={{ color: 'var(--text-primary)' }}>{selectedAlert.assignedTo || 'Unassigned'}</div>
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase' }}>Acknowledged By</span>
-                  <div style={{ color: '#fff' }}>{selectedAlert.acknowledgedBy || 'Pending'}</div>
+                  <div style={{ color: 'var(--text-primary)' }}>{selectedAlert.acknowledgedBy || 'Pending'}</div>
                 </div>
               </div>
 

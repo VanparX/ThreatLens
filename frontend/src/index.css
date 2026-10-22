@@ -1,26 +1,109 @@
 :root {
-  --bg-primary: #080c14;
-  --bg-secondary: #0d131f;
-  --bg-surface: #121a2b;
-  --bg-surface-hover: #18233a;
+  /* Enterprise SOC Dark Palette (Default) */
+  --bg-primary: #090d16;
+  --bg-secondary: #0f172a;
+  --bg-surface: #141f36;
+  --bg-surface-hover: #1c2a47;
+  --header-bg: rgba(15, 23, 42, 0.88);
   --border-color: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(0, 240, 255, 0.4);
+  --border-color-subtle: rgba(255, 255, 255, 0.04);
+  --border-focus: rgba(6, 182, 212, 0.5);
   
-  --text-primary: #f3f4f6;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
   
-  --neon-cyan: #00f0ff;
+  --neon-cyan: #06b6d4;
   --neon-blue: #3b82f6;
   --neon-purple: #8b5cf6;
   --neon-emerald: #10b981;
   --neon-amber: #f59e0b;
-  --neon-rose: #ef4444;
+  --neon-rose: #f43f5e;
 
-  --shadow-glow-cyan: 0 0 15px rgba(0, 240, 255, 0.25);
-  --shadow-glow-rose: 0 0 15px rgba(239, 68, 68, 0.3);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --chart-track: #1e293b;
+  --progress-track: rgba(255, 255, 255, 0.06);
+  --table-stripe: rgba(255, 255, 255, 0.02);
+  --table-hover: rgba(255, 255, 255, 0.03);
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+  --simulator-card-bg: linear-gradient(135deg, rgba(20, 31, 54, 0.95), rgba(15, 23, 42, 0.95));
+
+  --badge-critical-bg: rgba(244, 63, 94, 0.15);
+  --badge-critical-text: #fb7185;
+  --badge-critical-border: rgba(244, 63, 94, 0.3);
+
+  --badge-high-bg: rgba(245, 158, 11, 0.15);
+  --badge-high-text: #fbbf24;
+  --badge-high-border: rgba(245, 158, 11, 0.3);
+
+  --badge-medium-bg: rgba(59, 130, 246, 0.15);
+  --badge-medium-text: #60a5fa;
+  --badge-medium-border: rgba(59, 130, 246, 0.3);
+
+  --badge-low-bg: rgba(16, 185, 129, 0.15);
+  --badge-low-text: #34d399;
+  --badge-low-border: rgba(16, 185, 129, 0.3);
+
+  --scrollbar-track: #090d16;
+  --scrollbar-thumb: #1e293b;
+  --scrollbar-thumb-hover: #334155;
+
+  --shadow-glow-cyan: 0 0 15px rgba(6, 182, 212, 0.25);
+  --shadow-glow-rose: 0 0 15px rgba(244, 63, 94, 0.3);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+[data-theme="light"] {
+  /* Enterprise Light Security Console Palette */
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f8fafc;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --border-color: #e2e8f0;
+  --border-color-subtle: #f1f5f9;
+  --border-focus: #0284c7;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --neon-cyan: #0284c7;
+  --neon-blue: #2563eb;
+  --neon-purple: #7c3aed;
+  --neon-emerald: #059669;
+  --neon-amber: #d97706;
+  --neon-rose: #e11d48;
+
+  --chart-track: #e2e8f0;
+  --progress-track: #e2e8f0;
+  --table-stripe: #f8fafc;
+  --table-hover: #f1f5f9;
+  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --simulator-card-bg: linear-gradient(135deg, #ffffff, #f8fafc);
+
+  --badge-critical-bg: #ffe4e6;
+  --badge-critical-text: #be123c;
+  --badge-critical-border: #fecdd3;
+
+  --badge-high-bg: #fef3c7;
+  --badge-high-text: #b45309;
+  --badge-high-border: #fde68a;
+
+  --badge-medium-bg: #e0f2fe;
+  --badge-medium-text: #0369a1;
+  --badge-medium-border: #bae6fd;
+
+  --badge-low-bg: #d1fae5;
+  --badge-low-text: #047857;
+  --badge-low-border: #a7f3d0;
+
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+
+  --shadow-glow-cyan: 0 0 12px rgba(2, 132, 199, 0.2);
+  --shadow-glow-rose: 0 0 12px rgba(225, 29, 72, 0.2);
 }
 
 * {
@@ -36,6 +119,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Custom Scrollbars */
@@ -44,14 +128,14 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f293d;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Base Utility Classes */
@@ -60,15 +144,16 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 12px;
   padding: 1.25rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--card-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .soc-card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(6, 182, 212, 0.35);
 }
 
 .soc-card-glow {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--card-shadow);
 }
 
 .btn {
@@ -111,7 +196,7 @@ body {
 }
 .btn-secondary:hover {
   background: var(--bg-surface-hover);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--neon-cyan);
 }
 
 /* Badges */
@@ -121,34 +206,34 @@ body {
   gap: 0.35rem;
   padding: 0.25rem 0.6rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.025em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
 .badge-critical {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: var(--badge-critical-bg);
+  color: var(--badge-critical-text);
+  border: 1px solid var(--badge-critical-border);
 }
 
 .badge-high {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: var(--badge-high-bg);
+  color: var(--badge-high-text);
+  border: 1px solid var(--badge-high-border);
 }
 
 .badge-medium {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: var(--badge-medium-bg);
+  color: var(--badge-medium-text);
+  border: 1px solid var(--badge-medium-border);
 }
 
 .badge-low {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: var(--badge-low-bg);
+  color: var(--badge-low-text);
+  border: 1px solid var(--badge-low-border);
 }
 
 /* Inputs */
@@ -161,11 +246,11 @@ body {
   border-radius: 8px;
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .soc-input:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
 }
 
 /* Animations */

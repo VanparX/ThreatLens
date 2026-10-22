@@ -95,7 +95,7 @@ export default function NotificationSettingsPage() {
       {/* Title */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Bell color="var(--neon-cyan)" size={24} />
             <span>Alert Notification Channels (Email & SMS)</span>
           </h1>
@@ -127,7 +127,7 @@ export default function NotificationSettingsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.25rem' }}>
         {/* Email & SMS Settings Form */}
         <form onSubmit={handleSave} className="soc-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', margin: 0 }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', margin: 0 }}>
             Delivery Channel Preferences
           </h3>
 
@@ -136,7 +136,7 @@ export default function NotificationSettingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Mail size={17} color="var(--neon-cyan)" />
-                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#fff' }}>Email Security Advisories</span>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>Email Security Advisories</span>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                 <input
@@ -168,7 +168,7 @@ export default function NotificationSettingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Smartphone size={17} color="var(--neon-emerald)" />
-                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#fff' }}>Emergency SMS Notifications</span>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>Emergency SMS Notifications</span>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                 <input
@@ -220,7 +220,7 @@ export default function NotificationSettingsPage() {
 
         {/* Live Channel Testing Station */}
         <div className="soc-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#fff', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', margin: 0 }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', margin: 0 }}>
             Live Diagnostic Dispatch Station
           </h3>
 
@@ -231,7 +231,7 @@ export default function NotificationSettingsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div style={{ background: 'var(--bg-secondary)', padding: '0.85rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.82rem' }}>Email Channel Test</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.82rem' }}>Email Channel Test</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Target: {formData.recipientEmail || 'Not configured'}</div>
               </div>
               <button
@@ -248,7 +248,7 @@ export default function NotificationSettingsPage() {
 
             <div style={{ background: 'var(--bg-secondary)', padding: '0.85rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.82rem' }}>SMS Channel Test</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.82rem' }}>SMS Channel Test</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Target: {formData.recipientPhone || 'Not configured'}</div>
               </div>
               <button
@@ -273,7 +273,7 @@ export default function NotificationSettingsPage() {
       {/* Dispatched Notification Records Log */}
       <div className="soc-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '0.85rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', margin: 0 }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
             Recent Dispatched Notification Logs ({records.length})
           </h3>
           <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Outbound Audit Log</span>
@@ -300,11 +300,11 @@ export default function NotificationSettingsPage() {
                 </tr>
               ) : (
                 records.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }}>
+                  <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color-subtle)' }}>
                     <td style={{ padding: '0.65rem 1rem', fontWeight: 600, color: r.channel === 'EMAIL' ? 'var(--neon-cyan)' : 'var(--neon-emerald)' }}>
                       {r.channel}
                     </td>
-                    <td style={{ padding: '0.65rem 1rem', fontFamily: 'var(--font-mono)', color: '#fff' }}>
+                    <td style={{ padding: '0.65rem 1rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
                       {r.recipient}
                     </td>
                     <td style={{ padding: '0.65rem 1rem' }}>
@@ -313,8 +313,9 @@ export default function NotificationSettingsPage() {
                         fontWeight: 700,
                         padding: '0.15rem 0.45rem',
                         borderRadius: '4px',
-                        background: 'rgba(16, 185, 129, 0.2)',
-                        color: 'var(--neon-emerald)'
+                        background: 'var(--badge-low-bg)',
+                        color: 'var(--badge-low-text)',
+                        border: '1px solid var(--badge-low-border)'
                       }}>
                         {r.status}
                       </span>
