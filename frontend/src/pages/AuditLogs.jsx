@@ -1,167 +1,145 @@
 import React, { useState, useEffect } from 'react';
-import {
-  FileText,
-  Search,
-  RefreshCw,
-  Shield,
-  Clock,
-  User,
-  Database
-} from 'lucide-react';
+import { Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/client';
 
-export default function AuditLogs() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [actorFilter, setActorFilter] = useState('');
-  const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+function fmtTs(iso) {
+  if (!iso) return '–';
+  try { return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); } catch { return iso; }
+}
 
-  const fetchAuditLogs = async () => {
+export default function AuditLogs() {
+  const [logs, setLogs]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [actorFilter, setActorFilter] = useState('');
+  const [actorInput, setActorInput]   = useState('');
+  const [page, setPage]           = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+
+  const load = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const params = { page, size: 30 };
       if (actorFilter) params.actor = actorFilter;
       const res = await api.get('/audit', { params });
-      setLogs(res.data.content || []);
-      setTotalPages(res.data.totalPages || 0);
-    } catch (err) {
-      console.error('Failed to load audit logs:', err);
-    } finally {
-      setLoading(false);
-    }
+      const d = res?.data ?? res;
+      setLogs(d.content ?? []);
+      setTotalPages(d.totalPages ?? 0);
+      setTotalElements(d.totalElements ?? 0);
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchAuditLogs();
-  }, [page]);
+  useEffect(() => { load(); }, [page, actorFilter]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <FileText color="var(--neon-cyan)" size={24} />
-            <span>Immutable SOC Operator Audit Trail</span>
-          </h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Cryptographically tracked audit history recording all analyst actions, rule overrides, and containment operations.
-          </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div className="page-header">
+        <div className="page-header-info">
+          <h1 className="page-title">Audit Trail</h1>
+          <p className="page-subtitle">Immutable record of all analyst actions, rule changes, and system operations.</p>
         </div>
-
-        <button onClick={fetchAuditLogs} disabled={loading} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Refresh</span>
-        </button>
+        <div className="page-actions">
+          <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
+            <RefreshCw size={13} className={loading ? 'spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
-      {/* Filter Bar */}
-      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1, maxWidth: '350px' }}>
-          <Search size={14} color="var(--text-muted)" />
+      {/* Filter */}
+      <div className="filter-bar">
+        <div className="search-wrap">
+          <Search size={13} className="search-icon" />
           <input
             type="text"
-            placeholder="Filter by operator username (e.g. admin)..."
-            className="soc-input"
-            value={actorFilter}
-            onChange={(e) => setActorFilter(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); fetchAuditLogs(); } }}
-            style={{ fontSize: '0.78rem' }}
+            className="form-input"
+            placeholder="Filter by actor username…"
+            value={actorInput}
+            onChange={e => setActorInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { setActorFilter(actorInput); setPage(0); } }}
           />
         </div>
-        <button onClick={() => { setPage(0); fetchAuditLogs(); }} className="btn btn-secondary" style={{ fontSize: '0.78rem' }}>
-          Search
+        <button className="btn btn-secondary btn-sm" onClick={() => { setActorFilter(actorInput); setPage(0); }}>
+          Apply
         </button>
+        {actorFilter && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setActorFilter(''); setActorInput(''); setPage(0); }}>
+            Clear
+          </button>
+        )}
+        <span style={{ marginLeft: 'auto', fontSize: '0.714rem', color: 'var(--text-muted)' }}>
+          {totalElements.toLocaleString()} records
+        </span>
       </div>
 
-      {/* Audit Log Table */}
-      <div className="soc-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'left' }}>
+      <div className="panel" style={{ padding: 0 }}>
+        <div className="data-table-wrap">
+          <table className="data-table">
             <thead>
-              <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.68rem' }}>
-                <th style={{ padding: '0.75rem 1rem' }}>Timestamp</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Actor</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Action Executed</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Target Resource</th>
-                <th style={{ padding: '0.75rem 1rem' }}>Audit Parameters & State</th>
+              <tr>
+                <th style={{ width: '170px' }}>Timestamp</th>
+                <th style={{ width: '110px' }}>Actor</th>
+                <th style={{ width: '160px' }}>Action</th>
+                <th>Resource</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                    No audit logs recorded yet. All actions like acknowledging alerts or creating rules will appear here!
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color-subtle)' }}>
-                    <td style={{ padding: '0.7rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                      {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
-                    </td>
-                    <td style={{ padding: '0.7rem 1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <User size={13} color="var(--neon-cyan)" />
-                        {log.actor || 'SYSTEM'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.7rem 1rem' }}>
-                      <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        padding: '0.15rem 0.45rem',
-                        borderRadius: '4px',
-                        background: 'rgba(0, 240, 255, 0.1)',
-                        color: 'var(--neon-cyan)',
-                        border: '1px solid rgba(0, 240, 255, 0.2)'
-                      }}>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.7rem 1rem', color: 'var(--text-secondary)' }}>
-                      <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{log.resourceType}</span>
-                      {log.resourceId && (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--text-muted)', marginLeft: '0.35rem' }}>
-                          #{log.resourceId.substring(0, 8)}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ padding: '0.7rem 1rem', fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {log.details ? JSON.stringify(log.details) : '—'}
-                    </td>
-                  </tr>
-                ))
-              )}
+              {loading && logs.length === 0
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={i}>
+                      {Array.from({ length: 5 }).map((__, j) => (
+                        <td key={j}><div className="skeleton" style={{ height: '14px' }} /></td>
+                      ))}
+                    </tr>
+                  ))
+                : logs.length === 0
+                  ? (
+                    <tr>
+                      <td colSpan={5}>
+                        <div className="empty-state" style={{ padding: '2.5rem' }}>
+                          <div className="empty-state-title">No audit records yet</div>
+                          <div className="empty-state-text">All analyst actions (acknowledging alerts, creating rules, etc.) will appear here.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                  : logs.map(log => (
+                    <tr key={log.id}>
+                      <td className="col-mono col-dim">{fmtTs(log.timestamp)}</td>
+                      <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{log.actor || 'SYSTEM'}</td>
+                      <td>
+                        <span className="badge badge-accent" style={{ fontSize: '0.64rem' }}>{log.action}</span>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.814rem' }}>
+                        <span style={{ fontWeight: 500 }}>{log.resourceType}</span>
+                        {log.resourceId && (
+                          <span className="col-mono col-dim" style={{ marginLeft: '0.4rem', fontSize: '0.714rem' }}>
+                            #{log.resourceId.substring(0, 8)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="col-mono col-dim" style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.details ? JSON.stringify(log.details) : ''}>
+                        {log.details ? JSON.stringify(log.details) : '—'}
+                      </td>
+                    </tr>
+                  ))
+              }
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)', fontSize: '0.75rem' }}>
-          <span style={{ color: 'var(--text-muted)' }}>
-            Page {page + 1} of {Math.max(1, totalPages)}
-          </span>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="btn btn-secondary"
-              style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem' }}
-            >
-              Previous
+        {totalPages > 1 && (
+          <div className="pagination" style={{ borderTop: '1px solid var(--border-subtle)', background: 'var(--surface-nav)' }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>
+              <ChevronLeft size={13} /> Prev
             </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="btn btn-secondary"
-              style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem' }}
-            >
-              Next
+            <span className="page-info">Page {page + 1} of {totalPages}</span>
+            <button className="btn btn-ghost btn-sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+              Next <ChevronRight size={13} />
             </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,285 +1,201 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Flame,
-  ShieldAlert,
-  Shield,
-  Plus,
-  Lock,
-  Ban,
-  Key,
-  CheckCircle2,
-  Clock,
-  User,
-  MessageSquare,
-  RefreshCw,
-  Send
-} from 'lucide-react';
+import { RefreshCw, Plus, X, Flame, Shield, Lock, Ban, Key, Send, CheckCircle2 } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+function fmtTs(iso) {
+  if (!iso) return '–';
+  try { return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }); } catch { return iso; }
+}
+
+const STATUS_FLOW = ['NEW', 'INVESTIGATING', 'CONTAINED', 'RESOLVED', 'CLOSED'];
+
 export default function IncidentResponse() {
   const { user } = useAuth();
-  const [incidents, setIncidents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [incidents, setIncidents]       = useState([]);
+  const [loading, setLoading]           = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
-  const [selectedIncident, setSelectedIncident] = useState(null);
+  const [selected, setSelected]         = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [feedback, setFeedback] = useState(null);
+  const [showCreate, setShowCreate]     = useState(false);
+  const [feedback, setFeedback]         = useState(null);
+  const [noteText, setNoteText]         = useState('');
+  const [newInc, setNewInc]             = useState({ title: '', description: '', severity: 'HIGH', assignedTo: '' });
 
-  // New Note state
-  const [noteText, setNoteText] = useState('');
-
-  // Create Form State
-  const [newIncident, setNewIncident] = useState({
-    title: '',
-    description: '',
-    severity: 'HIGH',
-    assignedTo: ''
-  });
-
-  const fetchIncidents = async () => {
+  const load = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const params = { page: 0, size: 50 };
       if (statusFilter) params.status = statusFilter;
       const res = await api.get('/incidents', { params });
-      const items = res.data.content || [];
+      const d = res?.data ?? res;
+      const items = d.content ?? [];
       setIncidents(items);
-      if (selectedIncident) {
-        const updated = items.find((i) => i.id === selectedIncident.id);
-        if (updated) setSelectedIncident(updated);
+      if (selected) {
+        const upd = items.find(i => i.id === selected.id);
+        if (upd) setSelected(upd);
       }
-    } catch (err) {
-      console.error('Failed to load incidents:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchIncidents();
-  }, [statusFilter]);
+  useEffect(() => { load(); }, [statusFilter]);
 
-  const handleCreate = async (e) => {
+  const toast = (type, text) => {
+    setFeedback({ type, text });
+    setTimeout(() => setFeedback(null), 4000);
+  };
+
+  const create = async (e) => {
+    e.preventDefault(); setActionLoading(true);
+    try {
+      await api.post('/incidents', { ...newInc, assignedTo: newInc.assignedTo || user?.username || 'admin' });
+      setShowCreate(false);
+      setNewInc({ title: '', description: '', severity: 'HIGH', assignedTo: '' });
+      toast('success', 'Incident case opened');
+      load();
+    } catch (err) { toast('error', err.message); }
+    finally { setActionLoading(false); }
+  };
+
+  const changeStatus = async (id, status) => {
+    setActionLoading(true);
+    try {
+      await api.put(`/incidents/${id}/status?status=${status}`);
+      toast('success', `Status → ${status}`);
+      load();
+    } catch (err) { toast('error', err.message); }
+    finally { setActionLoading(false); }
+  };
+
+  const addNote = async (e) => {
     e.preventDefault();
+    if (!noteText.trim() || !selected) return;
+    setActionLoading(true);
     try {
-      setActionLoading(true);
-      await api.post('/incidents', {
-        ...newIncident,
-        assignedTo: newIncident.assignedTo || user?.username || 'admin'
-      });
-      setShowCreateModal(false);
-      setNewIncident({ title: '', description: '', severity: 'HIGH', assignedTo: '' });
-      setFeedback({ type: 'success', text: 'New incident response case opened.' });
-      fetchIncidents();
-    } catch (err) {
-      setFeedback({ type: 'danger', text: err.message });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (id, newStatus) => {
-    try {
-      setActionLoading(true);
-      await api.put(`/incidents/${id}/status?status=${newStatus}`);
-      setFeedback({ type: 'success', text: `Incident status updated to ${newStatus}.` });
-      fetchIncidents();
-    } catch (err) {
-      setFeedback({ type: 'danger', text: err.message });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleAddNote = async (e) => {
-    e.preventDefault();
-    if (!noteText.trim() || !selectedIncident) return;
-    try {
-      setActionLoading(true);
-      await api.post(`/incidents/${selectedIncident.id}/notes`, { note: noteText });
+      await api.post(`/incidents/${selected.id}/notes`, { note: noteText });
       setNoteText('');
-      fetchIncidents();
-    } catch (err) {
-      setFeedback({ type: 'danger', text: err.message });
-    } finally {
-      setActionLoading(false);
-    }
+      load();
+    } catch (err) { toast('error', err.message); }
+    finally { setActionLoading(false); }
   };
 
-  const handleExecuteContainment = async (actionType, target, description) => {
-    if (!selectedIncident) return;
+  const executeAction = async (actionType, target, description) => {
+    if (!selected) return;
+    setActionLoading(true);
     try {
-      setActionLoading(true);
-      await api.post(`/incidents/${selectedIncident.id}/actions`, {
-        actionType,
-        target,
-        description
-      });
-      setFeedback({ type: 'success', text: `Containment playbook [${actionType}] executed successfully against ${target}.` });
-      fetchIncidents();
-    } catch (err) {
-      setFeedback({ type: 'danger', text: err.message });
-    } finally {
-      setActionLoading(false);
-    }
+      await api.post(`/incidents/${selected.id}/actions`, { actionType, target, description });
+      toast('success', `${actionType} executed against ${target}`);
+      load();
+    } catch (err) { toast('error', err.message); }
+    finally { setActionLoading(false); }
   };
+
+  const CONTAINMENT = [
+    { key: 'IP_BLOCK',            label: 'Block IP',         icon: Ban,  target: '198.51.100.200', desc: 'Firewall drop rule: quarantine host from ingress' },
+    { key: 'USER_LOCK',           label: 'Lock account',     icon: Lock, target: 'compromised-account', desc: 'IDP: lock credentials and invalidate sessions' },
+    { key: 'CREDENTIAL_REVOCATION', label: 'Revoke tokens', icon: Key,  target: 'api-key-root', desc: 'Revoke compromised API tokens and JWT keys' },
+  ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Title & Top Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Flame color="var(--neon-rose)" size={24} />
-            <span>Incident Response & Containment Command</span>
-          </h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Orchestrated cyber incident escalation, MITRE ATT&CK mitigation, and active containment playbooks.
-          </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: 'calc(100vh - 52px - 3rem)' }}>
+      {/* Header */}
+      <div className="page-header">
+        <div className="page-header-info">
+          <h1 className="page-title">Incident Response</h1>
+          <p className="page-subtitle">Manage escalated security incidents, containment actions, and analyst timelines.</p>
         </div>
-
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
-          <button onClick={() => setShowCreateModal(true)} className="btn btn-primary" style={{ fontSize: '0.8rem' }}>
-            <Plus size={15} />
-            <span>Open Incident Case</span>
+        <div className="page-actions">
+          <select className="form-select" style={{ width: '155px' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+            <option value="">All statuses</option>
+            {STATUS_FLOW.map(s => <option key={s}>{s}</option>)}
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+            <Plus size={13} /> New incident
           </button>
-          <button onClick={fetchIncidents} disabled={loading} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>Refresh</span>
+          <button className="btn btn-secondary btn-sm" onClick={load} disabled={loading}>
+            <RefreshCw size={13} className={loading ? 'spin' : ''} /> Refresh
           </button>
         </div>
       </div>
 
-      {feedback && (
-        <div style={{
-          padding: '0.65rem 1rem',
-          borderRadius: '8px',
-          fontSize: '0.8rem',
-          background: feedback.type === 'danger' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-          color: feedback.type === 'danger' ? 'var(--neon-rose)' : 'var(--neon-emerald)',
-          border: `1px solid ${feedback.type === 'danger' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
-        }}>
-          {feedback.text}
-        </div>
-      )}
+      {feedback && <div className={`inline-feedback ${feedback.type}`}>{feedback.text}</div>}
 
-      {/* Main Split: Incident List & Workspace */}
-      <div style={{ display: 'grid', gridTemplateColumns: selectedIncident ? '1fr 1.3fr' : '1fr', gap: '1.25rem', alignItems: 'start' }}>
-        {/* Incident List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {incidents.length === 0 ? (
-            <div className="soc-card" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-              No incidents on record. Open a new incident case or escalate an existing Alert to start containment.
+      {/* Split view */}
+      <div style={{ display: 'flex', gap: '1rem', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        {/* Incident list */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {loading ? (
+            <div className="panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '72px' }} />)}
+            </div>
+          ) : incidents.length === 0 ? (
+            <div className="panel empty-state" style={{ flex: 1 }}>
+              <Shield size={36} style={{ color: 'var(--sev-low)', opacity: 0.5 }} />
+              <div className="empty-state-title">No incidents on record</div>
+              <div className="empty-state-text">Create a new incident case or escalate an alert from the Detections page.</div>
+              <button className="btn btn-primary btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => setShowCreate(true)}>
+                <Plus size={13} /> Open incident
+              </button>
             </div>
           ) : (
-            incidents.map((inc) => {
-              const isSelected = selectedIncident?.id === inc.id;
-              return (
-                <div
-                  key={inc.id}
-                  onClick={() => setSelectedIncident(inc)}
-                  className="soc-card"
-                  style={{
-                    cursor: 'pointer',
-                    borderColor: isSelected ? 'var(--neon-rose)' : 'var(--border-color)',
-                    background: isSelected ? 'rgba(239, 68, 68, 0.05)' : 'var(--bg-surface)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.5rem'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span className={`badge badge-${(inc.severity || 'high').toLowerCase()}`}>
-                        {inc.severity}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        CASE #{inc.id?.substring(0, 8)}
-                      </span>
-                    </div>
-
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '4px',
-                      background: inc.status === 'RESOLVED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                      color: inc.status === 'RESOLVED' ? 'var(--neon-emerald)' : 'var(--neon-rose)'
-                    }}>
-                      {inc.status}
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                    {inc.title}
-                  </h3>
-
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.35 }}>
-                    {inc.description}
-                  </p>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', marginTop: '0.2rem', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <User size={12} /> {inc.assignedTo || 'Unassigned'}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Clock size={12} /> {inc.createdAt ? new Date(inc.createdAt).toLocaleDateString() : 'Active'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })
+            <div className="panel" style={{ padding: 0 }}>
+              <div className="data-table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '80px' }}>Severity</th>
+                      <th>Title</th>
+                      <th style={{ width: '120px' }}>Status</th>
+                      <th style={{ width: '100px' }}>Assigned to</th>
+                      <th style={{ width: '130px' }}>Opened</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {incidents.map(inc => {
+                      const isSel = selected?.id === inc.id;
+                      return (
+                        <tr key={inc.id} onClick={() => setSelected(inc)} style={{ cursor: 'pointer', background: isSel ? 'var(--sev-critical-bg)' : undefined }}>
+                          <td><span className={`badge badge-${(inc.severity || 'high').toLowerCase()}`}>{inc.severity}</span></td>
+                          <td style={{ fontWeight: isSel ? 600 : 500, color: 'var(--text-primary)', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={inc.title}>{inc.title}</td>
+                          <td><span className={`status-pill ${(inc.status || '').toLowerCase()}`}>{inc.status}</span></td>
+                          <td style={{ fontSize: '0.786rem', color: 'var(--text-muted)' }}>{inc.assignedTo || '—'}</td>
+                          <td className="col-mono col-dim">{fmtTs(inc.createdAt)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* Selected Incident Active Command Workspace */}
-        {selectedIncident && (
-          <div className="soc-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', border: '1px solid rgba(239, 68, 68, 0.35)' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.85rem' }}>
+        {/* Detail pane */}
+        {selected && (
+          <div className="detail-drawer" style={{ width: '440px' }}>
+            <div className="detail-drawer-header">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span className={`badge badge-${(selectedIncident.severity || 'high').toLowerCase()}`}>
-                    {selectedIncident.severity}
-                  </span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    CASE #{selectedIncident.id}
-                  </span>
+                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                  <span className={`badge badge-${(selected.severity || 'high').toLowerCase()}`}>{selected.severity}</span>
+                  <span className={`status-pill ${(selected.status || '').toLowerCase()}`}>{selected.status}</span>
                 </div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.3rem' }}>
-                  {selectedIncident.title}
-                </h2>
+                <div style={{ fontSize: '0.857rem', fontWeight: 600, marginTop: '0.3rem', color: 'var(--text-primary)' }}>{selected.title}</div>
               </div>
-
-              <button
-                onClick={() => setSelectedIncident(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.1rem' }}
-              >
-                ✕
-              </button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setSelected(null)}><X size={14} /></button>
             </div>
 
-            {/* Lifecycle Status Stepper */}
-            <div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>
-                Incident Lifecycle Progression
-              </span>
-              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                {['NEW', 'INVESTIGATING', 'CONTAINED', 'RESOLVED', 'CLOSED'].map((st) => (
+            {/* Status progression */}
+            <div className="detail-section">
+              <div className="detail-section-title">Lifecycle status</div>
+              <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                {STATUS_FLOW.map(st => (
                   <button
                     key={st}
-                    onClick={() => handleStatusChange(selectedIncident.id, st)}
-                    disabled={actionLoading}
-                    className="btn"
-                    style={{
-                      fontSize: '0.72rem',
-                      padding: '0.35rem 0.65rem',
-                      background: selectedIncident.status === st ? 'rgba(0, 240, 255, 0.2)' : 'var(--bg-secondary)',
-                      color: selectedIncident.status === st ? 'var(--neon-cyan)' : 'var(--text-secondary)',
-                      border: selectedIncident.status === st ? '1px solid var(--neon-cyan)' : '1px solid var(--border-color)'
-                    }}
+                    className={`btn btn-sm ${selected.status === st ? 'btn-primary' : 'btn-ghost'}`}
+                    disabled={actionLoading || selected.status === st}
+                    onClick={() => changeStatus(selected.id, st)}
+                    style={{ fontSize: '0.714rem' }}
                   >
                     {st}
                   </button>
@@ -287,91 +203,61 @@ export default function IncidentResponse() {
               </div>
             </div>
 
-            {/* Automated Containment Playbook Actions */}
-            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.65rem' }}>
-                <Shield size={16} color="var(--neon-rose)" />
-                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                  Automated Containment Playbooks
-                </h4>
-              </div>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
-                Execute active mitigations directly via edge firewall and identity providers.
-              </p>
+            {/* Details */}
+            <div className="detail-section">
+              <div className="detail-section-title">Details</div>
+              <div style={{ fontSize: '0.786rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '0.5rem' }}>{selected.description}</div>
+              <div className="detail-row"><span className="detail-key">Assigned to</span><span className="detail-val">{selected.assignedTo || '—'}</span></div>
+              <div className="detail-row"><span className="detail-key">Opened</span><span className="detail-val col-mono">{fmtTs(selected.createdAt)}</span></div>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem' }}>
-                <button
-                  onClick={() => handleExecuteContainment('IP_BLOCK', '198.51.100.200', 'Edge Firewall Drop Rule: Quarantine host from external ingress')}
-                  disabled={actionLoading}
-                  className="btn btn-danger"
-                  style={{ fontSize: '0.74rem' }}
-                >
-                  <Ban size={13} />
-                  <span>Quarantine & Drop IP</span>
-                </button>
-
-                <button
-                  onClick={() => handleExecuteContainment('USER_LOCK', 'compromised-account', 'Identity Provider: Lock active credentials and invalidate session tokens')}
-                  disabled={actionLoading}
-                  className="btn btn-danger"
-                  style={{ fontSize: '0.74rem' }}
-                >
-                  <Lock size={13} />
-                  <span>Lock Target Account</span>
-                </button>
-
-                <button
-                  onClick={() => handleExecuteContainment('CREDENTIAL_REVOCATION', 'api-key-root', 'Secret Vault: Force revoke compromised API tokens & JWT keys')}
-                  disabled={actionLoading}
-                  className="btn btn-secondary"
-                  style={{ fontSize: '0.74rem' }}
-                >
-                  <Key size={13} />
-                  <span>Revoke Session Keys</span>
-                </button>
+            {/* Containment */}
+            <div className="detail-section">
+              <div className="detail-section-title">Containment actions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                {CONTAINMENT.map(c => (
+                  <button
+                    key={c.key}
+                    className="btn btn-secondary btn-sm"
+                    disabled={actionLoading}
+                    onClick={() => executeAction(c.key, c.target, c.desc)}
+                    style={{ justifyContent: 'flex-start' }}
+                  >
+                    <c.icon size={12} /> {c.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Action History & Notes Log */}
-            <div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.5rem' }}>
-                Response Actions Executed ({selectedIncident.responseActions?.length || 0})
-              </span>
-              {(!selectedIncident.responseActions || selectedIncident.responseActions.length === 0) ? (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: '6px' }}>
-                  No containment actions executed yet.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '160px', overflowY: 'auto' }}>
-                  {selectedIncident.responseActions.map((act, i) => (
-                    <div key={i} style={{ background: 'var(--bg-secondary)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.75rem', borderLeft: '3px solid var(--neon-emerald)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        <span>{act.actionType} → {act.target}</span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>{act.executedBy || 'SOAR'}</span>
-                      </div>
-                      <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.72rem' }}>
-                        {act.description}
-                      </p>
+            {/* Response actions history */}
+            {selected.responseActions?.length > 0 && (
+              <div className="detail-section">
+                <div className="detail-section-title">Action log ({selected.responseActions.length})</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '150px', overflowY: 'auto' }}>
+                  {selected.responseActions.map((a, i) => (
+                    <div key={i} style={{ fontSize: '0.75rem', background: 'var(--surface-elevated)', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--sev-low)' }}>
+                      <div style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{a.actionType} → {a.target}</div>
+                      <div style={{ color: 'var(--text-muted)', marginTop: '0.1rem' }}>{a.description}</div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Add Analyst Investigation Note */}
-            <div>
-              <form onSubmit={handleAddNote} style={{ display: 'flex', gap: '0.5rem' }}>
+            {/* Add note */}
+            <div className="detail-section">
+              <div className="detail-section-title">Add timeline note</div>
+              <form onSubmit={addNote} style={{ display: 'flex', gap: '0.4rem' }}>
                 <input
                   type="text"
-                  placeholder="Add analyst investigation note or timeline artifact..."
-                  className="soc-input"
+                  className="form-input"
+                  placeholder="Analyst note…"
                   value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  style={{ fontSize: '0.75rem' }}
+                  onChange={e => setNoteText(e.target.value)}
+                  style={{ flex: 1 }}
                 />
-                <button type="submit" disabled={actionLoading || !noteText.trim()} className="btn btn-primary" style={{ fontSize: '0.75rem' }}>
-                  <Send size={13} />
-                  <span>Log Note</span>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={actionLoading || !noteText.trim()}>
+                  <Send size={12} />
                 </button>
               </form>
             </div>
@@ -379,92 +265,40 @@ export default function IncidentResponse() {
         )}
       </div>
 
-      {/* Modal: Open New Incident Case */}
-      {showCreateModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(6px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '1rem'
-        }}>
-          <div className="soc-card" style={{ maxWidth: '500px', width: '100%', border: '1px solid var(--neon-rose)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Flame size={20} color="var(--neon-rose)" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                  Open Incident Case
-                </h3>
-              </div>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>
-                ✕
-              </button>
+      {/* Create modal */}
+      {showCreate && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">Open Incident Case</span>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowCreate(false)}><X size={14} /></button>
             </div>
-
-            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Incident Title</label>
-                <input
-                  type="text"
-                  className="soc-input"
-                  placeholder="e.g. Distributed SSH Credential Stuffing Attack"
-                  value={newIncident.title}
-                  onChange={(e) => setNewIncident({ ...newIncident, title: e.target.value })}
-                  required
-                />
+            <form onSubmit={create}>
+              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Title</label>
+                  <input className="form-input" placeholder="e.g. SSH credential stuffing attack" value={newInc.title} onChange={e => setNewInc(n => ({ ...n, title: e.target.value }))} required />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Severity</label>
+                    <select className="form-select" value={newInc.severity} onChange={e => setNewInc(n => ({ ...n, severity: e.target.value }))}>
+                      {['CRITICAL','HIGH','MEDIUM','LOW'].map(s => <option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Assigned to</label>
+                    <input className="form-input" placeholder={user?.username || 'analyst'} value={newInc.assignedTo} onChange={e => setNewInc(n => ({ ...n, assignedTo: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description</label>
+                  <textarea className="form-textarea" rows={3} placeholder="Scope, affected systems, initial findings…" value={newInc.description} onChange={e => setNewInc(n => ({ ...n, description: e.target.value }))} required />
+                </div>
               </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Severity Level</label>
-                <select
-                  className="soc-input"
-                  value={newIncident.severity}
-                  onChange={(e) => setNewIncident({ ...newIncident, severity: e.target.value })}
-                >
-                  <option value="CRITICAL">CRITICAL</option>
-                  <option value="HIGH">HIGH</option>
-                  <option value="MEDIUM">MEDIUM</option>
-                  <option value="LOW">LOW</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Assigned Lead Analyst</label>
-                <input
-                  type="text"
-                  className="soc-input"
-                  placeholder={user?.username || 'admin'}
-                  value={newIncident.assignedTo}
-                  onChange={(e) => setNewIncident({ ...newIncident, assignedTo: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.3rem' }}>Initial Scope & Description</label>
-                <textarea
-                  className="soc-input"
-                  rows="3"
-                  placeholder="Describe compromised assets, affected hostnames, or observed attack signatures..."
-                  value={newIncident.description}
-                  onChange={(e) => setNewIncident({ ...newIncident, description: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                <button type="button" onClick={() => setShowCreateModal(false)} className="btn btn-secondary">
-                  Cancel
-                </button>
-                <button type="submit" disabled={actionLoading} className="btn btn-danger">
-                  Open Case
-                </button>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={actionLoading}>Open case</button>
               </div>
             </form>
           </div>

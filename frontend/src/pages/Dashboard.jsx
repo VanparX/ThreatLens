@@ -1,327 +1,341 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  ShieldAlert,
-  Flame,
-  Terminal,
-  AlertTriangle,
-  RefreshCw,
-  TrendingUp,
-  Activity,
-  ArrowRight,
-  ShieldCheck
+  RefreshCw, ArrowRight, ShieldCheck, ShieldAlert,
+  AlertTriangle, Flame, ScrollText, Sliders
 } from 'lucide-react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, Cell
+} from 'recharts';
 import api from '../api/client';
+
+/* ---- helpers ---- */
+function fmt(n) { return typeof n === 'number' ? n.toLocaleString() : '–'; }
+
+function fmtTime(iso) {
+  if (!iso) return '–';
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    });
+  } catch { return iso; }
+}
+
+const SEV_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+const SEV_COLOR = {
+  CRITICAL: 'var(--sev-critical)',
+  HIGH:     'var(--sev-high)',
+  MEDIUM:   'var(--sev-medium)',
+  LOW:      'var(--sev-low)',
+};
+
+/* ---- Custom chart tooltip ---- */
+function ChartTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'var(--surface-elevated)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)', padding: '0.5rem 0.75rem', fontSize: '0.75rem'
+    }}>
+      <div style={{ color: 'var(--text-muted)', marginBottom: '0.2rem' }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color || 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+          {p.name}: {p.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ---- Skeleton ---- */
+function Skeleton({ w = '100%', h = '1.1rem', r = 'var(--radius-md)', style = {} }) {
+  return <div className="skeleton" style={{ width: w, height: h, borderRadius: r, ...style }} />;
+}
+
+/* ---- KPI Cell ---- */
+function KpiCell({ label, value, sub, colorClass, loading, onClick }) {
+  return (
+    <div className={`kpi-cell${onClick ? ' clickable' : ''}`} onClick={onClick} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}>
+      <div className="kpi-label">{label}</div>
+      {loading
+        ? <Skeleton h="1.6rem" style={{ marginTop: '0.2rem', marginBottom: '0.15rem' }} />
+        : <div className={`kpi-value${colorClass ? ' ' + colorClass : ''}`}>{value}</div>
+      }
+      {sub && !loading && <div className="kpi-sub">{sub}</div>}
+    </div>
+  );
+}
 
 export default function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [lastRefreshed, setLastRefreshed] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(null);
 
-  const fetchStats = async () => {
+  const fetch = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await api.get('/dashboard/stats');
-      setStats(res.data);
-      setLastRefreshed(new Date().toLocaleTimeString());
+      // res is already the data (axios interceptor unwraps .data)
+      setStats(res?.data ?? res);
+      setLastRefresh(new Date());
     } catch (err) {
-      console.error('Failed to load dashboard stats:', err);
+      console.error('Dashboard stats failed:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchStats();
+    fetch();
+  }, [fetch]);
+
+  useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchStats, 10000);
-    return () => clearInterval(interval);
-  }, [autoRefresh]);
+    const iv = setInterval(fetch, 15000);
+    return () => clearInterval(iv);
+  }, [autoRefresh, fetch]);
 
-  // Compute composite posture score (0 - 100)
-  const computePostureScore = () => {
-    if (!stats) return 100;
-    const critical = stats.alertsBySeverity?.CRITICAL || 0;
-    const high = stats.alertsBySeverity?.HIGH || 0;
-    const openIncidents = stats.openIncidents || 0;
-    const penalty = (critical * 18) + (high * 9) + (openIncidents * 12);
-    return Math.max(15, Math.min(100, 100 - penalty));
-  };
+  // Posture score — derived from real data, explained to user
+  const postureScore = (() => {
+    if (!stats || loading) return null;
+    const crit  = stats.alertsBySeverity?.CRITICAL || 0;
+    const high  = stats.alertsBySeverity?.HIGH     || 0;
+    const inc   = stats.openIncidents || 0;
+    const penalty = (crit * 18) + (high * 8) + (inc * 10);
+    return Math.max(0, Math.min(100, 100 - penalty));
+  })();
 
-  const postureScore = computePostureScore();
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'var(--neon-emerald)';
-    if (score >= 50) return 'var(--neon-amber)';
-    return 'var(--neon-rose)';
-  };
+  // Severity distribution for chart
+  const sevData = SEV_ORDER.map(sev => ({
+    name: sev.charAt(0) + sev.slice(1).toLowerCase(),
+    count: stats?.alertsBySeverity?.[sev] ?? 0,
+    color: SEV_COLOR[sev],
+  }));
+  const maxSev = Math.max(1, ...sevData.map(d => d.count));
+
+  // Recent alerts
+  const recentAlerts = stats?.recentAlerts ?? [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Top Banner & Control Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Activity color="var(--neon-cyan)" size={24} />
-            <span>SOC Telemetry & Threat Posture</span>
-          </h1>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-            Real-time correlation of event logs, automated rule detection, and active incident response status.
-          </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* Page header */}
+      <div className="page-header">
+        <div className="page-header-info">
+          <h1 className="page-title">Security Overview</h1>
+          <p className="page-subtitle">Security event monitoring, detection activity, and incident status.</p>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+        <div className="page-actions">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.764rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              style={{ accentColor: 'var(--neon-cyan)' }}
+              onChange={e => setAutoRefresh(e.target.checked)}
+              style={{ accentColor: 'var(--text-primary)', width: '13px', height: '13px' }}
             />
-            Auto-refresh (10s)
+            Auto-refresh
           </label>
-
           <button
-            onClick={fetchStats}
+            className="btn btn-secondary btn-sm"
+            onClick={fetch}
             disabled={loading}
-            className="btn btn-secondary"
-            style={{ fontSize: '0.78rem', padding: '0.4rem 0.8rem' }}
+            title="Refresh dashboard data"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>{lastRefreshed ? `Refreshed ${lastRefreshed}` : 'Refresh'}</span>
+            <RefreshCw size={13} className={loading ? 'spin' : ''} />
+            {lastRefresh ? `${lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Refresh'}
           </button>
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-        {/* KPI 1: Ingested Security Logs */}
-        <div className="soc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
-              Ingested Logs
-            </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-              {stats?.totalLogs?.toLocaleString() || 0}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--neon-cyan)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <TrendingUp size={12} />
-              <span>{stats?.logsLast24h || 0} in last 24h</span>
-            </div>
-          </div>
-          <div style={{ background: 'rgba(0, 240, 255, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
-            <Terminal size={24} color="var(--neon-cyan)" />
-          </div>
-        </div>
-
-        {/* KPI 2: Detections */}
-        <div className="soc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
-              Threat Detections
-            </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
-              {stats?.totalDetections || 0}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-              {stats?.openDetections || 0} open anomalies
-            </div>
-          </div>
-          <div style={{ background: 'rgba(59, 130, 246, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
-            <ShieldAlert size={24} color="var(--neon-blue)" />
-          </div>
-        </div>
-
-        {/* KPI 3: Open Alerts */}
-        <div className="soc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
-              Active Alerts
-            </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: stats?.openAlerts > 0 ? 'var(--neon-amber)' : 'var(--text-primary)', marginTop: '0.2rem' }}>
-              {stats?.openAlerts || 0}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-              {stats?.totalAlerts || 0} total lifecycle alerts
-            </div>
-          </div>
-          <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
-            <AlertTriangle size={24} color="var(--neon-amber)" />
-          </div>
-        </div>
-
-        {/* KPI 4: Active Incidents */}
-        <div className="soc-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
-              Active Incidents
-            </span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: stats?.openIncidents > 0 ? 'var(--neon-rose)' : 'var(--neon-emerald)', marginTop: '0.2rem' }}>
-              {stats?.openIncidents || 0}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-              {stats?.totalIncidents || 0} escalated cases
-            </div>
-          </div>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '10px' }}>
-            <Flame size={24} color="var(--neon-rose)" />
-          </div>
-        </div>
+      {/* KPI Row */}
+      <div className="kpi-grid">
+        <KpiCell
+          label="Security Events"
+          value={loading ? '' : fmt(stats?.totalLogs)}
+          sub={loading ? '' : `${fmt(stats?.logsLast24h ?? 0)} last 24 h`}
+          loading={loading}
+          onClick={() => onNavigate('logs')}
+        />
+        <KpiCell
+          label="Threat Detections"
+          value={loading ? '' : fmt(stats?.totalDetections)}
+          sub={loading ? '' : `${fmt(stats?.openDetections ?? 0)} open`}
+          loading={loading}
+          onClick={() => onNavigate('alerts')}
+        />
+        <KpiCell
+          label="Open Alerts"
+          value={loading ? '' : fmt(stats?.openAlerts)}
+          sub={loading ? '' : `${fmt(stats?.totalAlerts ?? 0)} total`}
+          colorClass={stats?.openAlerts > 0 ? 'warning' : ''}
+          loading={loading}
+          onClick={() => onNavigate('alerts')}
+        />
+        <KpiCell
+          label="Critical Alerts"
+          value={loading ? '' : fmt(stats?.alertsBySeverity?.CRITICAL ?? 0)}
+          sub="Require immediate review"
+          colorClass={stats?.alertsBySeverity?.CRITICAL > 0 ? 'critical' : ''}
+          loading={loading}
+          onClick={() => onNavigate('alerts')}
+        />
+        <KpiCell
+          label="Open Incidents"
+          value={loading ? '' : fmt(stats?.openIncidents)}
+          sub={loading ? '' : `${fmt(stats?.totalIncidents ?? 0)} total`}
+          colorClass={stats?.openIncidents > 0 ? 'critical' : 'healthy'}
+          loading={loading}
+          onClick={() => onNavigate('incidents')}
+        />
+        <KpiCell
+          label="Active Rules"
+          value={loading ? '' : fmt(stats?.activeRules)}
+          sub="Detection rules enabled"
+          colorClass="accent"
+          loading={loading}
+          onClick={() => onNavigate('rules')}
+        />
       </div>
 
-      {/* Main Grid: Threat Posture Gauge & Severity Distribution */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.25rem' }}>
-        {/* Posture Score & Health Card */}
-        <div className="soc-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Security Posture Score</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>SIEM Composite Index</span>
+      {/* Charts row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1rem', alignItems: 'start' }}>
+        {/* Severity distribution bar chart */}
+        <div className="chart-panel">
+          <div className="chart-panel-header">
+            <span style={{ fontSize: '0.857rem', fontWeight: 600, color: 'var(--text-primary)' }}>Alert Severity Distribution</span>
+            <span style={{ fontSize: '0.714rem', color: 'var(--text-muted)' }}>by count</span>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '1rem 0' }}>
-            <div style={{ position: 'relative', width: '130px', height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="130" height="130" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--chart-track)" strokeWidth="8" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="42"
-                  fill="none"
-                  stroke={getScoreColor(postureScore)}
-                  strokeWidth="8"
-                  strokeDasharray="264"
-                  strokeDashoffset={264 - (264 * postureScore) / 100}
-                  strokeLinecap="round"
-                  transform="rotate(-90 50 50)"
-                  style={{ transition: 'stroke-dashoffset 0.8s ease' }}
-                />
-              </svg>
-              <div style={{ position: 'absolute', textAlign: 'center' }}>
-                <span style={{ fontSize: '1.9rem', fontWeight: 800, color: getScoreColor(postureScore) }}>
-                  {postureScore}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>/100</span>
+          <div className="chart-body" style={{ height: '180px' }}>
+            {loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', padding: '0.5rem' }}>
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} h="28px" />)}
               </div>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxWidth: '180px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {postureScore >= 80 ? (
-                  <ShieldCheck size={18} color="var(--neon-emerald)" />
-                ) : (
-                  <ShieldAlert size={18} color={getScoreColor(postureScore)} />
-                )}
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  {postureScore >= 80 ? 'DEFENSE SECURE' : postureScore >= 50 ? 'ELEVATED RISK' : 'CRITICAL THREAT'}
-                </span>
-              </div>
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-                Real-time composite calculated from unmitigated critical alerts and active incident containment playbooks.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Active Rules Correlating:</span>
-            <strong style={{ color: 'var(--neon-cyan)' }}>{stats?.activeRules || 0} rules enabled</strong>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={sevData} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 8 }}>
+                  <CartesianGrid horizontal={false} stroke="var(--chart-grid)" strokeDasharray="4 4" />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} axisLine={false} tickLine={false} width={56} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                  <Bar dataKey="count" name="Alerts" radius={[0, 3, 3, 0]} maxBarSize={22}>
+                    {sevData.map((d) => <Cell key={d.name} fill={d.color} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
-        {/* Severity Distribution */}
-        <div className="soc-card">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Alert Severity Distribution</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Categorized Alerts</span>
+        {/* Posture score panel */}
+        <div className="chart-panel" style={{ height: '100%' }}>
+          <div className="chart-panel-header">
+            <span style={{ fontSize: '0.857rem', fontWeight: 600, color: 'var(--text-primary)' }}>Posture Score</span>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {[
-              { level: 'CRITICAL', color: 'var(--neon-rose)', count: stats?.alertsBySeverity?.CRITICAL || 0 },
-              { level: 'HIGH', color: 'var(--neon-amber)', count: stats?.alertsBySeverity?.HIGH || 0 },
-              { level: 'MEDIUM', color: 'var(--neon-blue)', count: stats?.alertsBySeverity?.MEDIUM || 0 },
-              { level: 'LOW', color: 'var(--neon-emerald)', count: stats?.alertsBySeverity?.LOW || 0 }
-            ].map((item) => {
-              const maxCount = Math.max(1, (stats?.totalAlerts || 1));
-              const pct = Math.round((item.count / maxCount) * 100);
-              return (
-                <div key={item.level}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.3rem' }}>
-                    <span style={{ fontWeight: 600, color: item.color }}>{item.level}</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>{item.count} alerts ({pct}%)</span>
-                  </div>
-                  <div style={{ height: '7px', background: 'var(--progress-track)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: item.color, borderRadius: '4px', transition: 'width 0.5s ease' }} />
-                  </div>
+          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {loading ? (
+              <>
+                <Skeleton h="60px" />
+                <Skeleton h="40px" />
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.3rem' }}>
+                  <span style={{
+                    fontSize: '2.8rem', fontWeight: 700, lineHeight: 1,
+                    color: postureScore >= 80 ? 'var(--sev-low)' : postureScore >= 50 ? 'var(--sev-high)' : 'var(--sev-critical)',
+                    fontVariantNumeric: 'tabular-nums'
+                  }}>
+                    {postureScore ?? '–'}
+                  </span>
+                  <span style={{ fontSize: '0.857rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>/100</span>
                 </div>
-              );
-            })}
+
+                <div style={{ height: '6px', background: 'var(--chart-track)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${postureScore ?? 0}%`, height: '100%', borderRadius: '4px',
+                    background: postureScore >= 80 ? 'var(--sev-low)' : postureScore >= 50 ? 'var(--sev-high)' : 'var(--sev-critical)',
+                    transition: 'width 0.8s cubic-bezier(0.16,1,0.3,1)'
+                  }} />
+                </div>
+
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  {postureScore >= 80
+                    ? 'No active critical threats.'
+                    : 'Score decreases per unresolved critical alert (−18) and open incident (−10).'}
+                </div>
+
+                <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  {postureScore >= 80
+                    ? <ShieldCheck size={14} style={{ color: 'var(--sev-low)' }} />
+                    : <ShieldAlert size={14} style={{ color: 'var(--sev-critical)' }} />}
+                  <span style={{ fontSize: '0.764rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                    {postureScore >= 80 ? 'Baseline secure' : postureScore >= 50 ? 'Elevated risk' : 'Critical threat'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Recent Alerts Feed Table */}
-      <div className="soc-card">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Recent SOC Escalations</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Latest threats flagged by the detection engine</p>
-          </div>
-          <button
-            onClick={() => onNavigate('alerts')}
-            className="btn btn-secondary"
-            style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
-          >
-            <span>View All Alerts</span>
-            <ArrowRight size={13} />
+      {/* Recent Alerts table */}
+      <div className="panel">
+        <div className="panel-header">
+          <span className="panel-title">Recent Alerts</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('alerts')}>
+            All alerts <ArrowRight size={13} />
           </button>
         </div>
 
-        {(!stats?.recentAlerts || stats.recentAlerts.length === 0) ? (
-          <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <ShieldCheck size={36} color="var(--neon-emerald)" style={{ margin: '0 auto 0.75rem auto', opacity: 0.8 }} />
-            <p>No recent alerts triggered. All network assets within normal baselines.</p>
-            <button
-              onClick={() => onNavigate('logs')}
-              className="btn btn-primary"
-              style={{ marginTop: '0.75rem', fontSize: '0.78rem' }}
-            >
-              Go to Simulator to Ingest Attack Logs
+        {loading ? (
+          <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} h="36px" />)}
+          </div>
+        ) : recentAlerts.length === 0 ? (
+          <div className="empty-state">
+            <ShieldCheck size={36} style={{ color: 'var(--sev-low)', opacity: 0.7 }} />
+            <div className="empty-state-title">No recent alerts</div>
+            <div className="empty-state-text">
+              No detections have been triggered. Use the Security Logs simulator to generate test events.
+            </div>
+            <button className="btn btn-secondary btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => onNavigate('logs')}>
+              Open Log Simulator
             </button>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+          <div className="data-table-wrap">
+            <table className="data-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '0.7rem' }}>
-                  <th style={{ padding: '0.65rem 0.85rem' }}>Title</th>
-                  <th style={{ padding: '0.65rem 0.85rem' }}>Severity</th>
-                  <th style={{ padding: '0.65rem 0.85rem' }}>Status</th>
-                  <th style={{ padding: '0.65rem 0.85rem' }}>Time</th>
-                  <th style={{ padding: '0.65rem 0.85rem', textAlign: 'right' }}>Action</th>
+                <tr>
+                  <th>Title</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                  <th style={{ width: '70px' }} />
                 </tr>
               </thead>
               <tbody>
-                {stats.recentAlerts.map((alert, idx) => (
-                  <tr key={alert.id || idx} style={{ borderBottom: '1px solid var(--border-color-subtle)' }}>
-                    <td style={{ padding: '0.75rem 0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
-                      {alert.title}
-                    </td>
-                    <td style={{ padding: '0.75rem 0.85rem' }}>
-                      <span className={`badge badge-${(alert.severity || 'low').toLowerCase()}`}>
-                        {alert.severity}
+                {recentAlerts.slice(0, 8).map((a, idx) => (
+                  <tr key={a.id ?? idx}>
+                    <td style={{ color: 'var(--text-primary)', fontWeight: 500, maxWidth: '320px' }}>
+                      <span title={a.title} style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.title}
                       </span>
                     </td>
-                    <td style={{ padding: '0.75rem 0.85rem', color: 'var(--text-secondary)' }}>
-                      {alert.status}
+                    <td>
+                      <span className={`badge badge-${(a.severity || 'low').toLowerCase()}`}>
+                        {a.severity}
+                      </span>
                     </td>
-                    <td style={{ padding: '0.75rem 0.85rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                      {alert.createdAt ? new Date(alert.createdAt).toLocaleTimeString() : 'Just now'}
+                    <td>
+                      <span className={`status-pill ${(a.status || '').toLowerCase()}`}>
+                        {a.status}
+                      </span>
                     </td>
-                    <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right' }}>
-                      <button
-                        onClick={() => onNavigate('alerts')}
-                        className="btn btn-secondary"
-                        style={{ padding: '0.25rem 0.55rem', fontSize: '0.72rem' }}
-                      >
+                    <td className="col-mono col-dim">{fmtTime(a.createdAt)}</td>
+                    <td>
+                      <button className="btn btn-ghost btn-xs" onClick={() => onNavigate('alerts')}>
                         Triage
                       </button>
                     </td>
