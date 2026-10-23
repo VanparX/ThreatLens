@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Bell, LogOut, User, Sun, Moon, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import axios from 'axios';
 import api from '../api/client';
 
 export default function Navbar({ onNavigate, activeTab, pageTitles }) {
@@ -25,9 +26,8 @@ export default function Navbar({ onNavigate, activeTab, pageTitles }) {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await api.get('/actuator/health');
-        // Spring Boot returns { status: 'UP' } or similar
-        const s = (res?.status || res?.data?.status || '').toUpperCase();
+        const res = await axios.get('/actuator/health');
+        const s = (res?.data?.status || '').toUpperCase();
         setBackendStatus(s === 'UP' || s === 'OK' ? 'up' : 'down');
       } catch {
         setBackendStatus('down');
@@ -61,7 +61,7 @@ export default function Navbar({ onNavigate, activeTab, pageTitles }) {
           title={backendStatus === 'up' ? 'Backend API healthy' : backendStatus === 'down' ? 'Backend unreachable' : 'Checking backend...'}
         >
           <span className={`status-dot ${backendStatus === 'up' ? 'status-dot-online' : backendStatus === 'down' ? 'status-dot-error' : 'status-dot-neutral'}`} />
-          {backendStatus === 'up' ? 'API' : backendStatus === 'down' ? 'API Offline' : 'Checking…'}
+          {backendStatus === 'up' ? 'API Online' : backendStatus === 'down' ? 'API Offline' : 'Checking…'}
           {backendStatus === 'up' ? <Wifi size={11} style={{ color: 'var(--status-online)' }} /> : backendStatus === 'down' ? <WifiOff size={11} style={{ color: 'var(--status-error)' }} /> : null}
         </span>
         <span className="status-chip" style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem' }}>
