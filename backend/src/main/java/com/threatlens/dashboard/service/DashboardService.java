@@ -39,8 +39,7 @@ public class DashboardService {
 
         Map<String, Long> alertsBySeverity = new LinkedHashMap<>();
         for (LogSeverity sev : LogSeverity.values()) {
-            alertsBySeverity.put(sev.name(), alertRepo.countByStatus(null) > 0
-                    ? alertRepo.findBySeverity(sev, PageRequest.of(0, 1)).getTotalElements() : 0L);
+            alertsBySeverity.put(sev.name(), alertRepo.countBySeverity(sev));
         }
 
         Map<String, Long> detectionsByCategory = Arrays.stream(RiskCategory.values())

@@ -16,5 +16,6 @@ public interface AlertRepository extends MongoRepository<Alert, String> {
     Page<Alert> findBySeverity(LogSeverity severity, Pageable pageable);
     Optional<Alert> findByDetectionId(String detectionId);
     long countByStatus(AlertStatus status);
+    long countBySeverity(LogSeverity severity);
     boolean existsByDetectionId(String detectionId);
 }
