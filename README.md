@@ -2,22 +2,24 @@
 
 [![Backend](https://img.shields.io/badge/Backend-Spring%20Boot%204%20%7C%20Java%2021%20LTS-brightgreen.svg)](#)
 [![Database](https://img.shields.io/badge/Database-MongoDB%207.0-forestgreen.svg)](#)
-[![Frontend](https://img.shields.io/badge/Frontend-React%20%7C%20Vite%20%7C%20SOC%20Dark%20Theme-blue.svg)](#)
-[![Security](https://img.shields.io/badge/Security-JWT%20Stateless%20%7C%20BCrypt%20%7C%20RBAC-cyan.svg)](#)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite%20%7C%20Slate%20Grey%20Theme-2e3138.svg)](#)
+[![Security](https://img.shields.io/badge/Security-JWT%20Stateless%20%7C%20BCrypt%20%7C%20RBAC-6b7280.svg)](#)
+[![Actuator](https://img.shields.io/badge/Health-Spring%20Boot%20Actuator%20Live-34d399.svg)](#)
 [![Notifications](https://img.shields.io/badge/Outbound-Email%20%26%20SMS%20Advisories-orange.svg)](#)
 
 ---
 
 ## 📌 Executive Summary
 
-**ThreatLens** is an autonomous, full-stack Security Operations Center (SOC) platform integrating **SIEM (Security Information and Event Management)** log collection with **SOAR (Security Orchestration, Automation, and Response)** capabilities.
+**ThreatLens** is an autonomous, full-stack Security Operations Center (SOC) platform integrating **SIEM (Security Information and Event Management)** log collection with **SOAR (Security Orchestration, Automation, and Response)** containment capabilities.
 
-Designed as a university capstone project in Full Stack Development & Cybersecurity Engineering, ThreatLens demonstrates the end-to-end security lifecycle:
-1. **Telemetry Ingestion**: High-throughput log collection from firewalls, bastion hosts, and endpoint sensors.
-2. **Detection & Risk Scoring**: Real-time evaluation against configurable threshold and pattern detection rules, computing composite asset risk scores ($0 - 100$).
-3. **Automated Alerting & Outbound Dispatch**: Auto-escalation of High/Critical threats, triggering immediate **Email Advisories** and emergency **SMS Notifications**.
-4. **Active Incident Containment**: Live response playbooks (IP isolation, compromised account lockdown, session token revocation).
-5. **Immutable Audit Logging**: Strict non-repudiation audit trail logging all operator overrides and playbook executions.
+Designed as a university capstone project in Full Stack Development & Cybersecurity Engineering, ThreatLens demonstrates the complete enterprise defense lifecycle:
+1. **Telemetry Ingestion**: High-throughput log collection across perimeter firewalls, SSH bastion hosts, ingress proxies, and identity providers.
+2. **Detection & Risk Scoring**: Real-time evaluation against configurable sliding-window correlation rules, computing dynamic asset risk scores ($0 - 100$).
+3. **Automated Alerting & Outbound Dispatch**: Auto-escalation of High and Critical threats, triggering automated **Email Advisories** and emergency **SMS Notifications**.
+4. **Active Incident Containment**: Live response playbooks (IP isolation, compromised identity lockdown, JWT session token revocation).
+5. **Command Hub & Executive Posture**: Dedicated post-login landing portal featuring environment health metrics, collector throughput, and quick-launch operational workspaces.
+6. **Immutable Audit Logging**: Strict non-repudiation audit trail recording all analyst triage decisions, rule modifications, and automated containment actions.
 
 ---
 
@@ -26,9 +28,10 @@ Designed as a university capstone project in Full Stack Development & Cybersecur
 ```
                     ┌────────────────────────────────────────────────────────┐
                     │               ThreatLens SOC Console (React)           │
-                    │   • Posture Score Gauge   • Real-Time Log Explorer     │
-                    │   • Alert Triage Center   • Adversary Simulator        │
-                    │   • SOAR Containment Hub  • Email/SMS Settings Panel   │
+                    │   • Command Hub (Landing) • Real-Time Log Explorer     │
+                    │   • Security Overview     • Adversary Simulator        │
+                    │   • Alert Triage Center   • Email/SMS Dispatch Panel   │
+                    │   • SOAR Containment Hub  • Immutable Audit Trail      │
                     └───────────────────────────┬────────────────────────────┘
                                                 │ REST API (JWT Bearer)
                                                 ▼
@@ -49,10 +52,10 @@ Designed as a university capstone project in Full Stack Development & Cybersecur
 │  └───────────────────────┘   └──────────────────────────┘   └─────────────────────────┘  │
 │                                           │                                              │
 │                                           ▼                                              │
-│                             ┌──────────────────────────┐                                 │
-│                             │   Immutable Audit Log    │                                 │
-│                             │   • SOC Action Recording │                                 │
-│                             └──────────────────────────┘                                 │
+│  ┌───────────────────────┐   ┌──────────────────────────┐                                │
+│  │  Actuator Telemetry   │   │   Immutable Audit Log    │                                │
+│  │  • Liveness / Readiness│   │   • SOC Action Recording │                                │
+│  └───────────────────────┘   └──────────────────────────┘                                │
 └───────────────────────────────────────────┬──────────────────────────────────────────────┘
                                             │ Mongo Driver (Port 27018)
                                             ▼
@@ -66,32 +69,48 @@ Designed as a university capstone project in Full Stack Development & Cybersecur
 
 ---
 
+## 🎨 Enterprise Design System
+
+ThreatLens features a sleek, professional **Slate & Charcoal Grey** design system built for mission-critical operations:
+- **Monochromatic Neutral Palette**: Deep charcoal canvases (`#121316`), graphite navigation surfaces (`#18191c`), and refined slate cards (`#1e2024`).
+- **Titanium Zinc Highlights**: Clean, high-contrast actions and indicators without distracting neon or glowing clutter.
+- **Restrained Severity Badges**: Desaturated, readable risk indicators (Critical, High, Medium, Low) for swift analyst triage.
+- **Theme Versatility**: Complete Dark Mode and Light Mode support with seamless real-time switching.
+
+---
+
 ## 🚀 Key Features & Capabilities
 
-### 1. Adversary Attack Simulator (Live Demonstration Hub)
-Evaluate the platform with 1-click built-in test attack vectors directly in the UI:
-- **SSH Brute Force Simulation**: Fires consecutive authentication failure bursts from an attacker IP, triggering the threshold rule and escalating to an Alert.
+### 1. Command Hub (Post-Authentication Landing Portal)
+Instead of overwhelming operators with dense data immediately upon sign-in, ThreatLens routes analysts to the **Command Hub**:
+- **Environment Barometer**: Real-time calculated security posture score, active detection count, open incident tally, and aggregate event throughput.
+- **Collector Node Telemetry**: Status indicators for connected infrastructure feeds (Perimeter Firewall, Privileged SSH Bastion, Ingress Envoy Gateway, and Identity Provider).
+- **Workspace Launchpads**: Direct 1-click access into dedicated operational modules.
+
+### 2. Adversary Attack Simulator (Live Demonstration Lab)
+Evaluate the detection pipeline in real time with 1-click built-in attack vectors:
+- **SSH Brute Force Simulation**: Fires a consecutive burst of authentication failure logs, triggering frequency thresholds and escalating to an Alert.
 - **Ransomware Canary & Encryption**: Dispatches `.locked` beacon logs at `CRITICAL` severity, automatically firing emergency SMS and email security advisories.
-- **Port Scan Sweep**: Simulates reconnaissance SYN sweeps across DMZ ports.
-- **Privilege Escalation**: Simulates unauthorized sudo elevation by non-privileged daemon users.
+- **Port Scan Sweep**: Simulates reconnaissance SYN sweeps across DMZ network interfaces.
+- **Privilege Escalation**: Simulates unauthorized sudo elevation by non-privileged service accounts.
 
-### 2. Multi-Channel Alert Dispatch (Email & SMS)
-- **Email Security Advisory**: Sends full alert reports (ID, severity, affected source IP, recommended action).
-- **Emergency SMS Dispatch**: Pushes critical SMS texts to on-duty security officers.
-- **Channel Preferences**: Fully configurable recipient email, telephone number, and minimum dispatch severity filter.
+### 3. Multi-Channel Alert Dispatch (Email & SMS)
+- **Email Security Advisories**: Sends structured advisory digests (Detection ID, severity, affected source IP, recommended playbook).
+- **Emergency SMS Dispatch**: Pushes urgent text alerts to on-duty incident responders.
+- **Channel Preferences**: Configurable recipient email addresses, emergency phone numbers, and minimum severity dispatch filters.
 
-### 3. SOAR Containment Playbooks
-Within any active Incident case, analysts can trigger live containment actions:
-- **Quarantine IP**: Drops ingress/egress traffic for the offending host.
-- **Lock Account**: Immediately terminates user session and disables credential lookup.
-- **Revoke Session Keys**: Force-invalidates JWT tokens across edge gateways.
+### 4. SOAR Containment Playbooks
+Within active Incident cases, analysts can execute live containment playbooks:
+- **Quarantine IP**: Drops ingress and egress traffic for malicious external hosts.
+- **Lock Account**: Immediately terminates active user sessions and suspends credential lookups.
+- **Revoke Session Keys**: Force-invalidates JWT security tokens across edge gateways.
 
-### 4. Detection Rule Engine
-Configurable sliding-window rules seeded out-of-the-box:
-1. *SSH Brute Force Detection* (Threshold: $\ge 3$ events in 60s)
-2. *Ransomware Encryption Activity* (Immediate Event Match: CRITICAL)
-3. *Reconnaissance & Port Sweep* (Event Match: MEDIUM)
-4. *Unauthorized Privilege Escalation* (Event Match: HIGH)
+### 5. Detection Rule Engine
+Configurable sliding evaluation window rules seeded out-of-the-box:
+1. *SSH Brute Force Detection* (Frequency Threshold: $\ge 3$ events within 60s)
+2. *Ransomware Encryption Activity* (Event Pattern Match: CRITICAL)
+3. *Reconnaissance & Port Sweep* (Event Pattern Match: MEDIUM)
+4. *Unauthorized Privilege Escalation* (Event Pattern Match: HIGH)
 
 ---
 
@@ -99,11 +118,11 @@ Configurable sliding-window rules seeded out-of-the-box:
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Backend Core** | Spring Boot 4.1.1, Java 21 LTS, Spring Data MongoDB, Spring Security |
-| **Database** | MongoDB 7.0 Containerized |
-| **Frontend Framework**| React 18, Vite, Lucide Icons, Modern SOC Dark Theme (CSS3 tokens) |
-| **Authentication** | JWT (HMAC-SHA512 with `io.jsonwebtoken 0.12.6`), BCrypt |
-| **Outbound Messaging**| Async Email Dispatcher, Simulated Telecom SMS Gateway |
+| **Backend Core** | Spring Boot 4.1.1, Java 21 LTS, Spring Data MongoDB, Spring Security, Spring Boot Actuator |
+| **Database** | MongoDB 7.0 Containerized (`threatlens-mongodb` on port 27018) |
+| **Frontend Framework**| React 18, Vite, Lucide Icons, Neutral Slate & Charcoal Grey Design System (CSS3 Tokens) |
+| **Authentication** | JWT Stateless (HMAC-SHA512 via `io.jsonwebtoken 0.12.6`), BCrypt Password Hashing, RBAC |
+| **Outbound Messaging**| Spring Mail SMTP, Simulated Telecom SMS Dispatch Gateway |
 
 ---
 
@@ -130,7 +149,7 @@ docker compose up -d
 cd backend
 ./mvnw spring-boot:run
 ```
-*The backend automatically compiles with Java 21, seeds the default admin user and armed detection rules, and listens on `http://localhost:8080`.*
+*The backend compiles with Java 21, automatically seeds the admin user and default detection rules, and listens on `http://localhost:8080`.*
 
 ---
 
@@ -148,31 +167,30 @@ npm run dev
 
 | Role | Username | Password | Access Level |
 | :--- | :--- | :--- | :--- |
-| **Lead SOC Admin** | `admin` | `ChangeMe!Admin123` | Full Administrative & Containment Access |
+| **Lead SOC Admin** | `admin` | `ChangeMe!Admin123` | Full Administrative, Rule Tuning & Containment Access |
 
-*(A 1-click button "Load Admin: admin / ChangeMe!Admin123" is available directly on the login screen for rapid evaluation).*
+*(A "Prefill credentials" shortcut is available directly on the login screen for rapid evaluation).*
 
 ---
 
 ## 🧪 Quick Evaluation Walkthrough
 
-1. **Log in**: Open `http://localhost:5173/` and click **Establish Secure SOC Session**.
-2. **Inspect Dashboard**: View the Security Posture Score ($0 - 100$) and live telemetry cards.
+1. **Sign In**: Navigate to `http://localhost:5173/` and click **Prefill credentials**, then click **Sign in**.
+2. **Command Hub**: Review the overall Security Posture Score, active sensor throughput, and select an operational module.
 3. **Launch Attack Simulation**:
-   - Go to **Log Stream & Simulator** in the sidebar.
+   - Navigate to **Security Logs** via the sidebar or Command Hub card.
    - Click **Simulate SSH Brute Force (5x Auth Fail)**.
    - Click **Simulate Ransomware Beacon (CRITICAL)**.
 4. **Triage Alerts**:
-   - Go to **Alert Center**.
-   - Notice the newly generated alerts from the detection engine.
-   - Click an alert to investigate, acknowledge, or claim it.
+   - Navigate to **Detections & Alerts**.
+   - Review the newly generated detection alerts flagged by the sliding-window engine.
+   - Click an alert row to inspect the detail drawer, acknowledge, or assign.
 5. **Execute Containment**:
-   - Go to **Incident Response**.
-   - Open an incident case or review active cases.
-   - Click **Quarantine & Drop IP** or **Lock Target Account**.
+   - Navigate to **Incident Response**.
+   - Open an active case and execute containment playbooks (**Quarantine IP**, **Lock User**, **Revoke Token**).
 6. **Verify Notifications & Audit**:
-   - Go to **Alert Channels (Email/SMS)**: Review dispatched SMS & email logs or send a test dispatch.
-   - Go to **SOC Audit Logs**: Verify that every action performed was immutably recorded.
+   - Navigate to **Notifications**: Review dispatched SMS and email logs or trigger a test dispatch.
+   - Navigate to **Audit Trail**: Confirm that all operator triage and containment actions are immutably logged with actor timestamps.
 
 ---
 
