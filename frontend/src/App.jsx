@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import CommandHub from './pages/CommandHub';
 import Dashboard from './pages/Dashboard';
 import LogExplorer from './pages/LogExplorer';
 import AlertCenter from './pages/AlertCenter';
@@ -11,9 +12,20 @@ import NotificationSettingsPage from './pages/NotificationSettingsPage';
 import AuditLogs from './pages/AuditLogs';
 import Login from './pages/Login';
 
+const PAGE_TITLES = {
+  hub:           'Command Hub',
+  dashboard:     'Security Overview',
+  logs:          'Security Logs',
+  alerts:        'Detections & Alerts',
+  incidents:     'Incident Response',
+  rules:         'Detection Rules',
+  notifications: 'Notifications',
+  audit:         'Audit Trail',
+};
+
 export default function App() {
   const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('hub');
 
   if (!isAuthenticated) {
     return <Login />;
@@ -21,32 +33,27 @@ export default function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard onNavigate={setActiveTab} />;
-      case 'logs':
-        return <LogExplorer />;
-      case 'alerts':
-        return <AlertCenter onNavigate={setActiveTab} />;
-      case 'incidents':
-        return <IncidentResponse />;
-      case 'rules':
-        return <RulesManager />;
-      case 'notifications':
-        return <NotificationSettingsPage />;
-      case 'audit':
-        return <AuditLogs />;
-      default:
-        return <Dashboard onNavigate={setActiveTab} />;
+      case 'hub':           return <CommandHub onNavigate={setActiveTab} />;
+      case 'dashboard':     return <Dashboard onNavigate={setActiveTab} />;
+      case 'logs':          return <LogExplorer />;
+      case 'alerts':        return <AlertCenter onNavigate={setActiveTab} />;
+      case 'incidents':     return <IncidentResponse />;
+      case 'rules':         return <RulesManager />;
+      case 'notifications': return <NotificationSettingsPage />;
+      case 'audit':         return <AuditLogs />;
+      default:              return <CommandHub onNavigate={setActiveTab} />;
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
-      <Navbar onNavigate={setActiveTab} activeTab={activeTab} />
-      <div style={{ display: 'flex', flex: 1 }}>
+    <div className="app-shell">
+      <Navbar onNavigate={setActiveTab} activeTab={activeTab} pageTitles={PAGE_TITLES} />
+      <div className="app-body">
         <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} />
-        <main style={{ flex: 1, padding: '1.75rem', overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
-          {renderContent()}
+        <main className="main-content" role="main" aria-label={PAGE_TITLES[activeTab] || 'Content'}>
+          <div className="page-enter" key={activeTab}>
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>
