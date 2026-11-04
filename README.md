@@ -194,6 +194,120 @@ npm run dev
 
 ---
 
+## 📧 SMTP Outbound Email Notification Setup
+
+ThreatLens includes a fully functional, enterprise HTML email notification engine that automatically dispatches security advisories to security analysts when **HIGH** or **CRITICAL** alerts are triggered.
+
+### 1. Environment Configuration
+
+To enable real email transmission, set the following environment variables before starting the backend (or configure them in your IDE / local `.env` file):
+
+| Variable | Description | Example (Gmail) | Example (Mailtrap / Test) |
+| :--- | :--- | :--- | :--- |
+| `SPRING_MAIL_HOST` | SMTP Server Host | `smtp.gmail.com` | `sandbox.smtp.mailtrap.io` |
+| `SPRING_MAIL_PORT` | SMTP Port | `587` | `2525` or `587` |
+| `SPRING_MAIL_USERNAME` | SMTP Account Username | `your-soc-alerts@gmail.com` | `your-mailtrap-username` |
+| `SPRING_MAIL_PASSWORD` | SMTP Account Password / App Password | `xxxx xxxx xxxx xxxx` | `your-mailtrap-password` |
+| `SPRING_MAIL_SMTP_AUTH` | Enable SMTP Authentication | `true` | `true` |
+| `SPRING_MAIL_SMTP_STARTTLS_ENABLE` | Enable STARTTLS Encryption | `true` | `true` |
+| `APP_MAIL_FROM` | Sender Email Header | `ThreatLens SOC <your-soc-alerts@gmail.com>` | `no-reply@threatlens.io` |
+| `APP_MAIL_DEFAULT_RECIPIENT` | Primary Analyst Recipient | `lead-analyst@yourdomain.com` | `analyst@threatlens.io` |
+
+> [!NOTE]
+> For **Gmail**, generate a 16-character **Google App Password** (Google Account > Security > 2-Step Verification > App Passwords) rather than your personal account password. Never check real passwords into source control.
+
+> [!NOTE]
+> **Channel Support Status**:
+> - **EMAIL (`NotificationChannel.EMAIL`)**: Backed by live, authentic outbound SMTP network delivery.
+> - **SMS (`NotificationChannel.SMS`)**: Implemented as an internal telecom gateway simulator for academic demonstration and SOC audit trail verification.
+
+---
+
+### 2. IntelliJ IDEA Setup Guide
+
+If running the backend from IntelliJ IDEA:
+1. Open **Run / Debug Configurations** (`Run` > `Edit Configurations...`).
+2. Select the `BackendApplication` Spring Boot run configuration.
+3. Locate the **Environment variables** field (or click **Modify options** > **Environment variables** if hidden).
+4. Add the semicolon-separated environment variables:
+   ```text
+   SPRING_MAIL_HOST=smtp.gmail.com;SPRING_MAIL_PORT=587;SPRING_MAIL_USERNAME=your-account@gmail.com;SPRING_MAIL_PASSWORD=your-16-char-app-password;SPRING_MAIL_SMTP_AUTH=true;SPRING_MAIL_SMTP_STARTTLS_ENABLE=true;APP_MAIL_DEFAULT_RECIPIENT=your-inbox@gmail.com;APP_MAIL_FROM=your-account@gmail.com
+   ```
+5. Click **Apply** and **OK**, then launch or restart `BackendApplication`.
+
+---
+
+### 3. Manual Verification & API Testing Procedures
+
+#### Option A: One-Click Diagnostic Test via SOC Console
+1. Navigate to **Notifications** (`http://localhost:5173/` -> Notifications).
+2. Enter your recipient email in the test dispatch panel.
+3. Click **Dispatch Test Email**.
+4. Check your inbox: verify the email arrived with ThreatLens SOC branding and timestamp.
+5. In the **Notification Audit Logs** table below, confirm status is `DELIVERED`.
+
+#### Option B: Verification via Terminal / cURL
+
+##### Step 1: Authenticate and Extract JWT Token
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "ChangeMe!Admin123"}' \
+  | grep -o '"accessToken":"[^"]*' | cut -d'"' -f4)
+
+echo "JWT Token: ${TOKEN:0:20}..."
+```
+
+##### Step 2: Test SMTP Delivery Directly via Test Endpoint
+The diagnostic test endpoint is `POST /api/notifications/test` and requires an authorized role (`ADMIN` or `SECURITY_ANALYST`):
+```bash
+curl -i -X POST http://localhost:8080/api/notifications/test \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "channel": "EMAIL",
+    "targetRecipient": "lead-analyst@yourdomain.com",
+    "customMessage": "Testing SOC outbound SMTP connectivity and formatting"
+  }'
+```
+*Expected Result*: HTTP `200 OK` with JSON response containing a `NotificationRecord` where `status: "DELIVERED"`.
+
+##### Step 3: Trigger an Automated CRITICAL Alert via Log Ingestion
+Ingest a security log matching the pre-seeded `Ransomware Encryption Activity` detection rule. The pipeline will automatically create a `CRITICAL` alert and dispatch an HTML email to the configured `APP_MAIL_DEFAULT_RECIPIENT`:
+```bash
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+curl -i -X POST http://localhost:8080/api/logs \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"timestamp\": \"$CURRENT_TIME\",
+    \"sourceIp\": \"198.51.100.23\",
+    \"destinationIp\": \"10.0.0.5\",
+    \"eventType\": \"RANSOMWARE_DETECTED\",
+    \"severity\": \"CRITICAL\",
+    \"sourceSystem\": \"finance-fileserver-01\",
+    \"message\": \"Mass file extension encryption detected matching known ransomware canary beacon\",
+    \"metadata\": {
+      \"process\": \"cryptolocker_payload.exe\",
+      \"affectedFiles\": 128
+    }
+  }"
+```
+*Expected Result*:
+1. Log ingestion responds with HTTP `201 Created`.
+2. Detection engine evaluates rules and creates a `CRITICAL` alert.
+3. The analyst inbox receives a dark-themed HTML security alert bulletin.
+
+##### Step 4: Verify Delivery Audit Record in ThreatLens
+```bash
+curl -s -X GET "http://localhost:8080/api/notifications/records?page=0&size=5" \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+*Expected Result*: Returns the latest audit log entry showing `channel: "EMAIL"`, `severity: "CRITICAL"`, and `status: "DELIVERED"`.
+
+---
+
 ## 👤 Author & Academic Information
 
 - **Author**: Pardhasaradhi Maheswaram

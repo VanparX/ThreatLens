@@ -34,7 +34,7 @@ public class NotificationController {
     }
 
     @PostMapping("/test")
-    @PreAuthorize("hasAnyRole('ADMIN', 'ANALYST')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SECURITY_ANALYST')")
     public ResponseEntity<ApiResponse<NotificationRecord>> testNotification(@Valid @RequestBody TestNotificationRequest req) {
         return ResponseEntity.ok(ApiResponse.success("Test notification dispatched", notificationService.sendTestNotification(req)));
     }
