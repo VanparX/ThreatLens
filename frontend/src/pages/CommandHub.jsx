@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Shield,
   LayoutDashboard,
@@ -19,22 +20,44 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
+import { formatIST } from '../utils/dateUtils';
 
 export default function CommandHub({ onNavigate }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const handleNavigate = (target) => {
+    if (typeof onNavigate === 'function') {
+      try { onNavigate(target); } catch (_) {}
+    }
+    const pathMap = {
+      dashboard: '/dashboard',
+      logs: '/logs',
+      detections: '/detections',
+      alerts: '/alerts',
+      incidents: '/incidents',
+      rules: '/rules',
+      notifications: '/notifications',
+      audit: '/audit',
+      'command-hub': '/command-hub',
+    };
+    navigate(pathMap[target] || target);
+  };
   const [stats, setStats] = useState({
-    activeAlerts: 0,
+    openAlerts: 0,
     openIncidents: 0,
+    openDetections: 0,
     totalLogs: 0,
-    postureScore: 94
+    logsLast24h: 0,
+    activeRules: 0,
+    postureScore: null
   });
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
 
   useEffect(() => {
     const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toUTCString().replace('GMT', 'UTC'));
+      setCurrentTime(formatIST(new Date()));
     };
     updateTime();
     const interval = setInterval(updateTime, 1000);
@@ -45,44 +68,27 @@ export default function CommandHub({ onNavigate }) {
     let mounted = true;
     const loadOverviewData = async () => {
       try {
-        const [alertsRes, incidentsRes, logsRes] = await Promise.allSettled([
-          api.get('/alerts'),
-          api.get('/incidents'),
-          api.get('/logs?page=0&size=1')
-        ]);
-
+        const res = await api.get('/dashboard/stats');
         if (!mounted) return;
+        const d = res?.data ?? res;
 
-        let alertsCount = 0;
-        if (alertsRes.status === 'fulfilled') {
-          const val = alertsRes.value;
-          const alertsList = val?.data?.content || val?.content || (Array.isArray(val?.data) ? val.data : (Array.isArray(val) ? val : []));
-          alertsCount = alertsList.length || 0;
-        }
-
-        let incidentsCount = 0;
-        if (incidentsRes.status === 'fulfilled') {
-          const val = incidentsRes.value;
-          const incidentsList = val?.data?.content || val?.content || (Array.isArray(val?.data) ? val.data : (Array.isArray(val) ? val : []));
-          incidentsCount = incidentsList.length || 0;
-        }
-
-        let totalLogs = 0;
-        if (logsRes.status === 'fulfilled') {
-          const val = logsRes.value;
-          totalLogs = val?.data?.totalElements ?? val?.totalElements ?? 0;
-        }
-
-        const score = Math.max(35, 100 - (incidentsCount * 12) - (alertsCount * 3));
+        const crit = d?.alertsBySeverity?.CRITICAL || 0;
+        const high = d?.alertsBySeverity?.HIGH || 0;
+        const inc = d?.openIncidents || 0;
+        const penalty = (crit * 16) + (high * 6) + (inc * 12);
+        const derivedScore = Math.max(0, Math.min(100, 100 - penalty));
 
         setStats({
-          activeAlerts: alertsCount,
-          openIncidents: incidentsCount,
-          totalLogs: totalLogs,
-          postureScore: score
+          openAlerts: d?.openAlerts ?? 0,
+          openIncidents: d?.openIncidents ?? 0,
+          openDetections: d?.openDetections ?? 0,
+          totalLogs: d?.totalLogs ?? 0,
+          logsLast24h: d?.logsLast24h ?? 0,
+          activeRules: d?.activeRules ?? 0,
+          postureScore: derivedScore
         });
-      } catch {
-        // Fallback gracefully
+      } catch (err) {
+        console.error('Failed to load Command Hub statistics:', err);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -112,12 +118,21 @@ export default function CommandHub({ onNavigate }) {
       actionText: 'Launch Log Stream'
     },
     {
+      id: 'detections',
+      title: 'Threat Detection Engine & Heuristics',
+      description: 'Behavioral rule match evaluations, deterministic risk scoring formula breakdowns, and triggering telemetry inspection.',
+      icon: Activity,
+      badge: stats.openDetections > 0 ? `${stats.openDetections} Active` : 'All Clear',
+      badgeClass: stats.openDetections > 0 ? 'badge-high' : 'badge-low',
+      actionText: 'Inspect Detections'
+    },
+    {
       id: 'alerts',
       title: 'Alert Triage & Detection Center',
       description: 'Prioritized event detections flagged by behavioral rules with severity-weighted scoring and analyst assignment.',
       icon: AlertTriangle,
-      badge: stats.activeAlerts > 0 ? `${stats.activeAlerts} Active` : 'All Clear',
-      badgeClass: stats.activeAlerts > 0 ? 'badge-high' : 'badge-low',
+      badge: stats.openAlerts > 0 ? `${stats.openAlerts} Active` : 'All Clear',
+      badgeClass: stats.openAlerts > 0 ? 'badge-high' : 'badge-low',
       actionText: 'Triage Alerts'
     },
     {
@@ -134,7 +149,7 @@ export default function CommandHub({ onNavigate }) {
       title: 'Correlation & Detection Rules',
       description: 'Configure frequency-threshold correlation rules, sliding time evaluation windows, and MITRE ATT&CK taxonomy alignments.',
       icon: Sliders,
-      badge: 'Engine Armed',
+      badge: `${stats.activeRules} Armed`,
       badgeClass: 'badge-medium',
       actionText: 'Configure Rules'
     },
@@ -156,13 +171,6 @@ export default function CommandHub({ onNavigate }) {
       badgeClass: 'badge-low',
       actionText: 'Inspect Trail'
     }
-  ];
-
-  const collectorNodes = [
-    { name: 'fw-perimeter-01.us-east', type: 'Perimeter Firewall Telemetry', status: 'Healthy', throughput: '840 eps', latency: '8ms' },
-    { name: 'bastion-auth-02.corp', type: 'Privileged Access Bastion (SSHD)', status: 'Healthy', throughput: '165 eps', latency: '12ms' },
-    { name: 'edge-gateway-envoy.dmz', type: 'API Ingress Gateway', status: 'Healthy', throughput: '520 eps', latency: '9ms' },
-    { name: 'idp-sso.internal', type: 'Identity Provider & OAuth Audit', status: 'Healthy', throughput: '110 eps', latency: '7ms' }
   ];
 
   return (
@@ -205,7 +213,7 @@ export default function CommandHub({ onNavigate }) {
             </div>
 
             <button
-              onClick={() => onNavigate('dashboard')}
+              onClick={() => handleNavigate('dashboard')}
               className="btn btn-primary"
               style={{ padding: '0.55rem 1.1rem', fontSize: '0.82rem', gap: '0.5rem' }}
             >
@@ -221,65 +229,79 @@ export default function CommandHub({ onNavigate }) {
         <div className="kpi-cell">
           <div className="kpi-label">Security Posture Score</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <span className="kpi-value" style={{ color: stats.postureScore >= 80 ? 'var(--status-online)' : 'var(--sev-high)' }}>
-              {stats.postureScore}
+            <span
+              className="kpi-value"
+              style={{
+                color: (stats.postureScore ?? 100) >= 80
+                  ? 'var(--status-online)'
+                  : (stats.postureScore ?? 100) >= 50
+                    ? 'var(--sev-high)'
+                    : 'var(--sev-critical)'
+              }}
+            >
+              {loading ? '–' : (stats.postureScore ?? 100)}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ 100</span>
-            <span className="badge badge-low" style={{ marginLeft: 'auto', fontSize: '0.65rem' }}>
-              STABLE
+            <span
+              className={`badge ${(stats.postureScore ?? 100) >= 80 ? 'badge-low' : (stats.postureScore ?? 100) >= 50 ? 'badge-high' : 'badge-critical'}`}
+              style={{ marginLeft: 'auto', fontSize: '0.65rem' }}
+            >
+              {loading ? '–' : (stats.postureScore ?? 100) >= 80 ? 'DEFCON 5' : (stats.postureScore ?? 100) >= 50 ? 'DEFCON 3' : 'DEFCON 2'}
             </span>
           </div>
-          <div className="kpi-meta">Calculated across active alerts & open incidents</div>
+          <div className="kpi-meta">Frontend heuristic score (derived from active threats)</div>
         </div>
 
         <div className="kpi-cell">
-          <div className="kpi-label">Telemetry Ingestion Status</div>
+          <div className="kpi-label">Ingested Security Events</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
             <span className="kpi-value">
-              {stats.totalLogs ? Number(stats.totalLogs).toLocaleString() : '1,635'}
+              {loading ? '–' : Number(stats.totalLogs || 0).toLocaleString()}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>events</span>
             <span className="badge badge-low" style={{ marginLeft: 'auto', fontSize: '0.65rem' }}>
-              4 / 4 ONLINE
+              DB LIVE
             </span>
           </div>
-          <div className="kpi-meta">Aggregate velocity ~1,635 EPS</div>
+          <div className="kpi-meta">
+            {loading ? '–' : `${Number(stats.logsLast24h || 0).toLocaleString()} events ingested in last 24h`}
+          </div>
         </div>
 
         <div className="kpi-cell">
-          <div className="kpi-label">Active Detections</div>
+          <div className="kpi-label">Active Threat Alerts</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-            <span className="kpi-value" style={{ color: stats.activeAlerts > 0 ? 'var(--sev-high)' : 'var(--status-online)' }}>
-              {stats.activeAlerts}
+            <span className="kpi-value" style={{ color: stats.openAlerts > 0 ? 'var(--sev-high)' : 'var(--status-online)' }}>
+              {loading ? '–' : stats.openAlerts}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>unresolved</span>
             <button
-              onClick={() => onNavigate('alerts')}
+              onClick={() => handleNavigate('alerts')}
               className="btn btn-ghost btn-sm"
               style={{ marginLeft: 'auto', fontSize: '0.72rem', padding: '0.15rem 0.4rem', color: 'var(--text-secondary)' }}
             >
               Review →
             </button>
           </div>
-          <div className="kpi-meta">Prioritized by rule risk score</div>
+          <div className="kpi-meta">Open, acknowledged &amp; assigned alerts</div>
         </div>
 
         <div className="kpi-cell">
           <div className="kpi-label">Open Incident Cases</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
             <span className="kpi-value" style={{ color: stats.openIncidents > 0 ? 'var(--sev-critical)' : 'var(--text-primary)' }}>
-              {stats.openIncidents}
+              {loading ? '–' : stats.openIncidents}
             </span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>cases</span>
             <button
-              onClick={() => onNavigate('incidents')}
+              onClick={() => handleNavigate('incidents')}
               className="btn btn-ghost btn-sm"
               style={{ marginLeft: 'auto', fontSize: '0.72rem', padding: '0.15rem 0.4rem', color: 'var(--text-secondary)' }}
             >
               Contain →
             </button>
           </div>
-          <div className="kpi-meta">SOAR automated playbooks available</div>
+          <div className="kpi-meta">Active investigation &amp; containment cases</div>
         </div>
       </div>
 
@@ -306,7 +328,7 @@ export default function CommandHub({ onNavigate }) {
             return (
               <div
                 key={mod.id}
-                onClick={() => onNavigate(mod.id)}
+                onClick={() => handleNavigate(mod.id)}
                 className="launch-card"
                 style={{
                   display: 'flex',
@@ -361,65 +383,6 @@ export default function CommandHub({ onNavigate }) {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Infrastructure Telemetry Stream Summary */}
-      <div className="panel" style={{ padding: '1.25rem 1.4rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <div>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              Connected Telemetry Collector Nodes
-            </h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.15rem 0 0 0' }}>
-              Active sensors streaming security events into the ThreatLens ingestion pipeline.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigate('logs')}
-            className="btn btn-secondary btn-sm"
-            style={{ fontSize: '0.75rem' }}
-          >
-            Open Live Log Stream
-          </button>
-        </div>
-
-        <div className="table-wrap">
-          <table className="table" style={{ fontSize: '0.786rem' }}>
-            <thead>
-              <tr>
-                <th>Collector Node</th>
-                <th>Source Technology</th>
-                <th>Status</th>
-                <th>Throughput</th>
-                <th>Ingestion Latency</th>
-              </tr>
-            </thead>
-            <tbody>
-              {collectorNodes.map((s, idx) => (
-                <tr key={idx}>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 500 }}>
-                    {s.name}
-                  </td>
-                  <td style={{ color: 'var(--text-secondary)' }}>
-                    {s.type}
-                  </td>
-                  <td>
-                    <span className="badge badge-low" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <span className="status-dot status-dot-online" style={{ width: '4px', height: '4px' }} />
-                      {s.status}
-                    </span>
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-                    {s.throughput}
-                  </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                    {s.latency}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

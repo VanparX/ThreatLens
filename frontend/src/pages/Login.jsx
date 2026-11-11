@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Shield, User, Lock, Eye, EyeOff, AlertCircle, ArrowRight, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
+function getDestination(from) {
+  if (!from) return '/command-hub';
+  if (typeof from === 'string') {
+    return from !== '/login' ? from : '/command-hub';
+  }
+  const pathname = from.pathname;
+  if (!pathname || pathname === '/login') return '/command-hub';
+  const search = from.search || '';
+  const hash = from.hash || '';
+  return `${pathname}${search}${hash}`;
+}
+
 export default function Login() {
   const { login, loading } = useAuth();
   const { toggleTheme, isDark } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -16,6 +31,8 @@ export default function Login() {
     setError('');
     try {
       await login(username, password);
+      const dest = getDestination(location.state?.from);
+      navigate(dest, { replace: true });
     } catch (err) {
       setError(err.message || 'Authentication failed. Check your credentials.');
     }

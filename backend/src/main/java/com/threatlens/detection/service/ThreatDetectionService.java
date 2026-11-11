@@ -1,12 +1,14 @@
 package com.threatlens.detection.service;
 
 import com.threatlens.alert.service.AlertService;
+import com.threatlens.common.exception.BadRequestException;
 import com.threatlens.common.exception.NotFoundException;
 import com.threatlens.detection.dto.ThreatDetectionResponse;
 import com.threatlens.detection.model.DetectionStatus;
 import com.threatlens.detection.model.RiskCategory;
 import com.threatlens.detection.model.ThreatDetection;
 import com.threatlens.detection.repository.ThreatDetectionRepository;
+import com.threatlens.log.model.LogSeverity;
 import com.threatlens.log.model.SecurityLog;
 import com.threatlens.log.repository.SecurityLogRepository;
 import com.threatlens.log.service.SecurityLogIngestedEvent;
@@ -18,6 +20,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -89,8 +93,8 @@ public class ThreatDetectionService {
             log.info("Threat detection created: id={}, rule={}, score={}, category={}",
                     saved.getId(), rule.getName(), riskScore.score(), riskScore.category());
 
-            // Auto-create alert for HIGH/CRITICAL
-            if (riskScore.category() == RiskCategory.HIGH || riskScore.category() == RiskCategory.CRITICAL) {
+            // Auto-create alert for HIGH/CRITICAL rule severity
+            if (saved.getSeverity() == LogSeverity.HIGH || saved.getSeverity() == LogSeverity.CRITICAL) {
                 if (alertService != null) {
                     try {
                         alertService.createFromDetection(saved, secLog, rule);
@@ -103,8 +107,15 @@ public class ThreatDetectionService {
     }
 
     public Page<ThreatDetectionResponse> listDetections(DetectionStatus status, RiskCategory category, Pageable pageable) {
-        if (status != null) return detectionRepository.findByStatus(status, pageable).map(this::toResponse);
-        if (category != null) return detectionRepository.findByRiskCategory(category, pageable).map(this::toResponse);
+        if (status != null && category != null) {
+            return detectionRepository.findByStatusAndRiskCategory(status, category, pageable).map(this::toResponse);
+        }
+        if (status != null) {
+            return detectionRepository.findByStatus(status, pageable).map(this::toResponse);
+        }
+        if (category != null) {
+            return detectionRepository.findByRiskCategory(category, pageable).map(this::toResponse);
+        }
         return detectionRepository.findAll(pageable).map(this::toResponse);
     }
 
@@ -112,11 +123,35 @@ public class ThreatDetectionService {
         return toResponse(findById(id));
     }
 
-    public ThreatDetectionResponse updateStatus(String id, DetectionStatus status) {
+    public ThreatDetectionResponse updateStatus(String id, DetectionStatus newStatus) {
+        if (newStatus == null) {
+            throw new BadRequestException("Target status is required");
+        }
         ThreatDetection det = findById(id);
-        det.setStatus(status);
-        if (status == DetectionStatus.RESOLVED) det.setResolvedAt(Instant.now());
-        return toResponse(detectionRepository.save(det));
+        DetectionStatus currentStatus = det.getStatus();
+
+        if (!currentStatus.canTransitionTo(newStatus)) {
+            throw new BadRequestException("Invalid detection status transition: " + currentStatus + " → " + newStatus);
+        }
+
+        det.setStatus(newStatus);
+        if (newStatus == DetectionStatus.RESOLVED) {
+            det.setResolvedAt(Instant.now());
+            det.setResolvedBy(currentUser());
+        } else {
+            det.setResolvedAt(null);
+            det.setResolvedBy(null);
+        }
+
+        ThreatDetection saved = detectionRepository.save(det);
+        log.info("Detection status updated: id={}, from={}, to={}, by={}",
+                saved.getId(), currentStatus, newStatus, currentUser());
+        return toResponse(saved);
+    }
+
+    private String currentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.getName() != null && !auth.getName().isBlank()) ? auth.getName() : "system";
     }
 
     private ThreatDetection findById(String id) {

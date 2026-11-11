@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   RefreshCw, ArrowRight, ShieldCheck, ShieldAlert,
   AlertTriangle, Flame, ScrollText, Sliders, Zap,
@@ -9,20 +10,12 @@ import {
   ResponsiveContainer, Cell
 } from 'recharts';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { injectNormalEvent, injectAttack } from '../utils/telemetryService';
+import { formatIST, formatISTTime } from '../utils/dateUtils';
 
 /* ---- helpers ---- */
 function fmt(n) { return typeof n === 'number' ? n.toLocaleString() : '–'; }
-
-function fmtTime(iso) {
-  if (!iso) return '–';
-  try {
-    return new Date(iso).toLocaleString(undefined, {
-      month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    });
-  } catch { return iso; }
-}
 
 const SEV_ORDER = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 const SEV_COLOR = {
@@ -71,10 +64,30 @@ function KpiCell({ label, value, sub, colorClass, loading, onClick }) {
 }
 
 export default function Dashboard({ onNavigate }) {
+  const navigate = useNavigate();
+  const { canWrite } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
+
+  const handleNavigate = (target) => {
+    if (typeof onNavigate === 'function') {
+      try { onNavigate(target); } catch (_) {}
+    }
+    const pathMap = {
+      dashboard: '/dashboard',
+      logs: '/logs',
+      detections: '/detections',
+      alerts: '/alerts',
+      incidents: '/incidents',
+      rules: '/rules',
+      notifications: '/notifications',
+      audit: '/audit',
+      'command-hub': '/command-hub',
+    };
+    navigate(pathMap[target] || target);
+  };
 
   // Real-time telemetry generator state
   const [isStreaming, setIsStreaming] = useState(false);
@@ -135,7 +148,7 @@ export default function Dashboard({ onNavigate }) {
         title: result.title,
         message: result.message,
         severity: result.severity,
-        time: new Date().toLocaleTimeString()
+        time: `${formatISTTime(new Date())} IST`
       });
       // Refresh dashboard immediately
       setTimeout(() => fetch(), 600);
@@ -144,7 +157,7 @@ export default function Dashboard({ onNavigate }) {
         success: false,
         title: 'Injection Error',
         message: err.message || 'Failed to ingest attack log',
-        time: new Date().toLocaleTimeString()
+        time: `${formatISTTime(new Date())} IST`
       });
     } finally {
       setActiveSimulation(null);
@@ -198,7 +211,7 @@ export default function Dashboard({ onNavigate }) {
             title="Refresh dashboard metrics"
           >
             <RefreshCw size={13} className={loading ? 'spin' : ''} />
-            {lastRefresh ? `${lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : 'Refresh'}
+            {lastRefresh ? `${formatISTTime(lastRefresh)} IST` : 'Refresh'}
           </button>
         </div>
       </div>
@@ -251,6 +264,8 @@ export default function Dashboard({ onNavigate }) {
           <button
             className={`btn btn-sm ${isStreaming ? 'btn-secondary' : 'btn-primary'}`}
             onClick={() => setIsStreaming(!isStreaming)}
+            disabled={!canWrite}
+            title={!canWrite ? 'Log ingestion requires SECURITY_ANALYST or ADMIN role' : undefined}
             style={{ minWidth: '135px', justifyContent: 'center' }}
           >
             {isStreaming ? (
@@ -276,7 +291,8 @@ export default function Dashboard({ onNavigate }) {
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => handleInjectAttack('BRUTE_FORCE')}
-            disabled={activeSimulation !== null}
+            disabled={!canWrite || activeSimulation !== null}
+            title={!canWrite ? 'Attack simulation requires SECURITY_ANALYST or ADMIN role' : undefined}
             style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '0.45rem' }}
           >
             <Zap size={13} style={{ color: 'var(--sev-high)' }} />
@@ -285,7 +301,8 @@ export default function Dashboard({ onNavigate }) {
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => handleInjectAttack('RANSOMWARE')}
-            disabled={activeSimulation !== null}
+            disabled={!canWrite || activeSimulation !== null}
+            title={!canWrite ? 'Attack simulation requires SECURITY_ANALYST or ADMIN role' : undefined}
             style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '0.45rem' }}
           >
             <AlertOctagon size={13} style={{ color: 'var(--sev-critical)' }} />
@@ -294,7 +311,8 @@ export default function Dashboard({ onNavigate }) {
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => handleInjectAttack('PORT_SCAN')}
-            disabled={activeSimulation !== null}
+            disabled={!canWrite || activeSimulation !== null}
+            title={!canWrite ? 'Attack simulation requires SECURITY_ANALYST or ADMIN role' : undefined}
             style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '0.45rem' }}
           >
             <Radio size={13} style={{ color: 'var(--sev-medium)' }} />
@@ -303,7 +321,8 @@ export default function Dashboard({ onNavigate }) {
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => handleInjectAttack('PRIV_ESC')}
-            disabled={activeSimulation !== null}
+            disabled={!canWrite || activeSimulation !== null}
+            title={!canWrite ? 'Attack simulation requires SECURITY_ANALYST or ADMIN role' : undefined}
             style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '0.45rem' }}
           >
             <ShieldAlert size={13} style={{ color: 'var(--sev-high)' }} />
@@ -342,14 +361,14 @@ export default function Dashboard({ onNavigate }) {
           value={loading ? '' : fmt(stats?.totalLogs)}
           sub={loading ? '' : `${fmt(stats?.logsLast24h ?? 0)} in last 24h`}
           loading={loading}
-          onClick={() => onNavigate('logs')}
+          onClick={() => handleNavigate('logs')}
         />
         <KpiCell
           label="Threat Detections"
           value={loading ? '' : fmt(stats?.totalDetections)}
           sub={loading ? '' : `${fmt(stats?.openDetections ?? 0)} open`}
           loading={loading}
-          onClick={() => onNavigate('alerts')}
+          onClick={() => handleNavigate('detections')}
         />
         <KpiCell
           label="Open Alerts"
@@ -357,7 +376,7 @@ export default function Dashboard({ onNavigate }) {
           sub={loading ? '' : `${fmt(stats?.totalAlerts ?? 0)} total generated`}
           colorClass={stats?.openAlerts > 0 ? 'warning' : ''}
           loading={loading}
-          onClick={() => onNavigate('alerts')}
+          onClick={() => handleNavigate('alerts')}
         />
         <KpiCell
           label="Critical Alerts"
@@ -365,7 +384,7 @@ export default function Dashboard({ onNavigate }) {
           sub="Requires immediate SOC triage"
           colorClass={stats?.alertsBySeverity?.CRITICAL > 0 ? 'critical' : ''}
           loading={loading}
-          onClick={() => onNavigate('alerts')}
+          onClick={() => handleNavigate('alerts')}
         />
         <KpiCell
           label="Active Incidents"
@@ -373,7 +392,7 @@ export default function Dashboard({ onNavigate }) {
           sub={loading ? '' : `${fmt(stats?.totalIncidents ?? 0)} total incidents`}
           colorClass={stats?.openIncidents > 0 ? 'critical' : 'healthy'}
           loading={loading}
-          onClick={() => onNavigate('incidents')}
+          onClick={() => handleNavigate('incidents')}
         />
         <KpiCell
           label="Active Rules"
@@ -381,7 +400,7 @@ export default function Dashboard({ onNavigate }) {
           sub="Heuristic & threshold rules"
           colorClass="accent"
           loading={loading}
-          onClick={() => onNavigate('rules')}
+          onClick={() => handleNavigate('rules')}
         />
       </div>
 
@@ -512,7 +531,7 @@ export default function Dashboard({ onNavigate }) {
                     </span>
                   </div>
                   <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    4 Rules Armed
+                    {loading ? '–' : `${stats?.activeRules ?? 0} Rules Armed`}
                   </span>
                 </div>
               </>
@@ -530,7 +549,7 @@ export default function Dashboard({ onNavigate }) {
               (Real alerts generated by SIEM rule matches)
             </span>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('alerts')}>
+          <button className="btn btn-ghost btn-sm" onClick={() => handleNavigate('alerts')}>
             All alerts <ArrowRight size={13} />
           </button>
         </div>
@@ -546,9 +565,11 @@ export default function Dashboard({ onNavigate }) {
             <div className="empty-state-text">
               No detection rules have fired yet. Click any button in the Attack Lab above to generate authentic threat telemetry.
             </div>
-            <button className="btn btn-secondary btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => handleInjectAttack('BRUTE_FORCE')}>
-              Inject SSH Brute Force Attack
-            </button>
+            {canWrite && (
+              <button className="btn btn-secondary btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => handleInjectAttack('BRUTE_FORCE')}>
+                Inject SSH Brute Force Attack
+              </button>
+            )}
           </div>
         ) : (
           <div className="data-table-wrap">
@@ -558,7 +579,7 @@ export default function Dashboard({ onNavigate }) {
                   <th>Alert Title</th>
                   <th>Severity</th>
                   <th>Status</th>
-                  <th>Ingested Time</th>
+                  <th>Ingested Time (IST)</th>
                   <th style={{ width: '80px', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
@@ -580,9 +601,9 @@ export default function Dashboard({ onNavigate }) {
                         {a.status}
                       </span>
                     </td>
-                    <td className="col-mono col-dim" style={{ fontSize: '0.74rem' }}>{fmtTime(a.createdAt)}</td>
+                    <td className="col-mono col-dim" style={{ fontSize: '0.74rem' }}>{formatIST(a.createdAt)}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-ghost btn-xs" onClick={() => onNavigate('alerts')}>
+                      <button className="btn btn-ghost btn-xs" onClick={() => handleNavigate('alerts')}>
                         Triage →
                       </button>
                     </td>

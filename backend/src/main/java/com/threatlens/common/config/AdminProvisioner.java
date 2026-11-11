@@ -82,6 +82,7 @@ public class AdminProvisioner implements ApplicationRunner {
                         .condition(RuleCondition.builder()
                                 .thresholdCount(3)
                                 .thresholdWindowSeconds(60)
+                                .groupBySourceIp(true)
                                 .eventTypes(List.of(LogEventType.BRUTE_FORCE, LogEventType.AUTHENTICATION_FAILURE))
                                 .build())
                         .build(),

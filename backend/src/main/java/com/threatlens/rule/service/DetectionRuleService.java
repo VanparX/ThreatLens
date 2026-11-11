@@ -50,8 +50,31 @@ public class DetectionRuleService {
         return toResponse(saved);
     }
 
-    public Page<DetectionRuleResponse> listRules(Pageable pageable) {
+    public Page<DetectionRuleResponse> listRules(Boolean enabled, RuleType type, Pageable pageable) {
+        if (enabled != null && type != null) {
+            return ruleRepository.findByEnabledAndType(enabled, type, pageable).map(this::toResponse);
+        }
+        if (enabled != null) {
+            return ruleRepository.findByEnabled(enabled, pageable).map(this::toResponse);
+        }
+        if (type != null) {
+            return ruleRepository.findByType(type, pageable).map(this::toResponse);
+        }
         return ruleRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    public Page<DetectionRuleResponse> listRules(Pageable pageable) {
+        return listRules(null, null, pageable);
+    }
+
+    public Map<String, Long> getRuleStats() {
+        long total = ruleRepository.count();
+        long enabled = ruleRepository.countByEnabled(true);
+        return Map.of(
+                "totalRules", total,
+                "enabledRules", enabled,
+                "disabledRules", total - enabled
+        );
     }
 
     public List<DetectionRuleResponse> getEnabledRules() {
@@ -64,6 +87,9 @@ public class DetectionRuleService {
 
     public DetectionRuleResponse updateRule(String id, DetectionRuleRequest request) {
         DetectionRule rule = findById(id);
+        if (!rule.getName().equals(request.getName()) && ruleRepository.existsByName(request.getName())) {
+            throw new ConflictException("A rule with this name already exists: " + request.getName());
+        }
         validateCondition(request);
 
         rule.setName(request.getName());
@@ -86,6 +112,13 @@ public class DetectionRuleService {
         auditService.record(enabled ? AuditAction.RULE_ENABLED : AuditAction.RULE_DISABLED,
                 "DetectionRule", id, Map.of("name", rule.getName()));
         return toResponse(saved);
+    }
+
+    public void deleteRule(String id) {
+        DetectionRule rule = findById(id);
+        ruleRepository.delete(rule);
+        auditService.record(AuditAction.RULE_DELETED, "DetectionRule", id,
+                Map.of("name", rule.getName()));
     }
 
     private DetectionRule findById(String id) {

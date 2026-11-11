@@ -7,6 +7,7 @@ import com.threatlens.common.exception.NotFoundException;
 import com.threatlens.incident.dto.*;
 import com.threatlens.incident.model.*;
 import com.threatlens.incident.repository.IncidentRepository;
+import com.threatlens.log.model.LogSeverity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -49,13 +50,31 @@ public class IncidentService {
         return toResponse(saved);
     }
 
-    public Page<IncidentResponse> listIncidents(IncidentStatus status, Pageable pageable) {
-        if (status != null) return incidentRepository.findByStatus(status, pageable).map(this::toResponse);
+    public Page<IncidentResponse> listIncidents(IncidentStatus status, LogSeverity severity, Pageable pageable) {
+        if (status != null && severity != null) {
+            return incidentRepository.findByStatusAndSeverity(status, severity, pageable).map(this::toResponse);
+        }
+        if (status != null) {
+            return incidentRepository.findByStatus(status, pageable).map(this::toResponse);
+        }
+        if (severity != null) {
+            return incidentRepository.findBySeverity(severity, pageable).map(this::toResponse);
+        }
         return incidentRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    public Page<IncidentResponse> listIncidents(IncidentStatus status, Pageable pageable) {
+        return listIncidents(status, null, pageable);
     }
 
     public IncidentResponse getIncident(String id) {
         return toResponse(findById(id));
+    }
+
+    public IncidentResponse getIncidentByAlertId(String alertId) {
+        return incidentRepository.findByAlertId(alertId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NotFoundException("Incident not found for alert: " + alertId));
     }
 
     public IncidentResponse updateStatus(String id, IncidentStatus newStatus, String resolutionSummary) {

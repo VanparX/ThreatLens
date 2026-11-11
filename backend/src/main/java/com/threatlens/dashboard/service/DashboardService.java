@@ -37,9 +37,15 @@ public class DashboardService {
     public DashboardStats getStats() {
         Instant yesterday = Instant.now().minus(24, ChronoUnit.HOURS);
 
+        List<AlertStatus> activeAlertStatuses = List.of(
+                AlertStatus.OPEN,
+                AlertStatus.ACKNOWLEDGED,
+                AlertStatus.ASSIGNED
+        );
+
         Map<String, Long> alertsBySeverity = new LinkedHashMap<>();
         for (LogSeverity sev : LogSeverity.values()) {
-            alertsBySeverity.put(sev.name(), alertRepo.countBySeverity(sev));
+            alertsBySeverity.put(sev.name(), alertRepo.countByStatusInAndSeverity(activeAlertStatuses, sev));
         }
 
         Map<String, Long> detectionsByCategory = Arrays.stream(RiskCategory.values())
@@ -62,13 +68,19 @@ public class DashboardService {
                         .status(d.getStatus().name()).createdAt(d.getDetectedAt()).build())
                 .collect(Collectors.toList());
 
+        List<DetectionStatus> activeDetectionStatuses = List.of(
+                DetectionStatus.NEW,
+                DetectionStatus.ACKNOWLEDGED,
+                DetectionStatus.ALERT_CREATED
+        );
+
         return DashboardStats.builder()
                 .totalLogs(logRepo.count())
                 .logsLast24h(logRepo.countByTimestampAfter(yesterday))
                 .totalDetections(detectionRepo.count())
-                .openDetections(detectionRepo.countByStatus(DetectionStatus.NEW))
+                .openDetections(detectionRepo.countByStatusIn(activeDetectionStatuses))
                 .totalAlerts(alertRepo.count())
-                .openAlerts(alertRepo.countByStatus(AlertStatus.OPEN) + alertRepo.countByStatus(AlertStatus.ACKNOWLEDGED))
+                .openAlerts(alertRepo.countByStatusIn(activeAlertStatuses))
                 .totalIncidents(incidentRepo.count())
                 .openIncidents(incidentRepo.countByStatus(IncidentStatus.OPEN) + incidentRepo.countByStatus(IncidentStatus.INVESTIGATING))
                 .activeRules(ruleRepo.findByEnabled(true).size())

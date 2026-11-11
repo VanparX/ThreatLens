@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../api/client';
-
-function fmtTs(iso) {
-  if (!iso) return '–';
-  try { return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }); } catch { return iso; }
-}
+import { formatIST } from '../utils/dateUtils';
 
 export default function AuditLogs() {
   const [logs, setLogs]           = useState([]);
@@ -77,7 +73,7 @@ export default function AuditLogs() {
           <table className="data-table">
             <thead>
               <tr>
-                <th style={{ width: '170px' }}>Timestamp</th>
+                <th style={{ width: '185px' }}>Timestamp (IST)</th>
                 <th style={{ width: '110px' }}>Actor</th>
                 <th style={{ width: '160px' }}>Action</th>
                 <th>Resource</th>
@@ -106,7 +102,7 @@ export default function AuditLogs() {
                   )
                   : logs.map(log => (
                     <tr key={log.id}>
-                      <td className="col-mono col-dim">{fmtTs(log.timestamp)}</td>
+                      <td className="col-mono col-dim">{formatIST(log.timestamp)}</td>
                       <td style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{log.actor || 'SYSTEM'}</td>
                       <td>
                         <span className="badge badge-accent" style={{ fontSize: '0.64rem' }}>{log.action}</span>

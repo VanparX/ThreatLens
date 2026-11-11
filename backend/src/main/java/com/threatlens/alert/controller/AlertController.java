@@ -5,6 +5,7 @@ import com.threatlens.alert.dto.AlertUpdateRequest;
 import com.threatlens.alert.model.AlertStatus;
 import com.threatlens.alert.service.AlertService;
 import com.threatlens.common.response.ApiResponse;
+import com.threatlens.log.model.LogSeverity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,10 +24,11 @@ public class AlertController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<AlertResponse>>> list(
             @RequestParam(required = false) AlertStatus status,
+            @RequestParam(required = false) LogSeverity severity,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.success("Alerts fetched",
-                alertService.listAlerts(status, PageRequest.of(page, Math.min(size, 100),
+                alertService.listAlerts(status, severity, PageRequest.of(page, Math.min(size, 100),
                         Sort.by(Sort.Direction.DESC, "createdAt")))));
     }
 
@@ -34,6 +36,12 @@ public class AlertController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AlertResponse>> get(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success("Alert fetched", alertService.getAlert(id)));
+    }
+
+    @GetMapping("/by-detection/{detectionId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<AlertResponse>> getByDetection(@PathVariable String detectionId) {
+        return ResponseEntity.ok(ApiResponse.success("Alert fetched", alertService.getAlertByDetectionId(detectionId)));
     }
 
     @PutMapping("/{id}/acknowledge")

@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -16,7 +17,9 @@ public interface ThreatDetectionRepository extends MongoRepository<ThreatDetecti
     Optional<ThreatDetection> findByLogIdAndRuleId(String logId, String ruleId);
     Page<ThreatDetection> findByStatus(DetectionStatus status, Pageable pageable);
     Page<ThreatDetection> findByRiskCategory(RiskCategory category, Pageable pageable);
+    Page<ThreatDetection> findByStatusAndRiskCategory(DetectionStatus status, RiskCategory category, Pageable pageable);
     long countByStatus(DetectionStatus status);
+    long countByStatusIn(Collection<DetectionStatus> statuses);
     long countByRiskCategory(RiskCategory category);
     long countByDetectedAtAfter(Instant after);
 }

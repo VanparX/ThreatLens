@@ -25,6 +25,7 @@ public class RuleCondition {
     // Threshold-based
     private Integer thresholdCount;
     private Integer thresholdWindowSeconds;
+    private Boolean groupBySourceIp;
 
     // Pattern-based (regex or keyword)
     private List<String> patterns;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ScrollText,
@@ -11,11 +12,10 @@ import {
   ChevronRight,
   Shield,
   Activity,
-  Server,
-  Zap,
   Terminal,
-  ShieldAlert,
-  Cpu
+  Cpu,
+  Lock,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,40 +23,37 @@ const NAV_SECTIONS = [
   {
     title: 'OPERATIONS',
     items: [
-      { id: 'hub',       label: 'Command Hub',       icon: Shield,          badge: 'Portal' },
-      { id: 'dashboard', label: 'Security Overview', icon: LayoutDashboard },
-      { id: 'logs',      label: 'Security Logs',     icon: ScrollText,      badge: 'Live', badgeType: 'live' },
+      { path: '/command-hub', id: 'hub',       label: 'Command Hub',       icon: Shield,          badge: 'Portal' },
+      { path: '/dashboard',   id: 'dashboard', label: 'Security Overview', icon: LayoutDashboard },
+      { path: '/logs',        id: 'logs',      label: 'Security Logs',     icon: ScrollText,      badge: 'Live', badgeType: 'live' },
     ]
   },
   {
     title: 'THREAT INTELLIGENCE & SOAR',
     items: [
-      { id: 'alerts',    label: 'Detections & Alerts', icon: AlertTriangle },
-      { id: 'incidents', label: 'Incident Response',   icon: Flame,         badge: 'SOAR' },
-      { id: 'rules',     label: 'Detection Rules',     icon: Sliders,       badge: '4 Armed' },
+      { path: '/detections',  id: 'detections', label: 'Threat Detections', icon: Activity, badge: 'Live', badgeType: 'live' },
+      { path: '/alerts',      id: 'alerts',     label: 'Detections & Alerts', icon: AlertTriangle },
+      { path: '/incidents',   id: 'incidents',  label: 'Incident Response',   icon: Flame,         badge: 'SOAR' },
+      { path: '/rules',       id: 'rules',      label: 'Detection Rules',     icon: Sliders,       badge: 'Active' },
     ]
   },
   {
     title: 'GOVERNANCE & CHANNELS',
     items: [
-      { id: 'notifications', label: 'Notifications',  icon: Bell },
-      { id: 'audit',         label: 'Audit Trail',    icon: FileText },
+      { path: '/notifications', id: 'notifications', label: 'Notifications',  icon: Bell },
+      { path: '/users',         id: 'users',         label: 'User Management', icon: Users,    adminOnly: true },
+      { path: '/audit',         id: 'audit',         label: 'Audit Trail',    icon: FileText, adminOnly: true },
     ]
   }
 ];
 
-export default function Sidebar({ activeTab, onSelectTab }) {
+export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { user, isAdmin } = useAuth();
-  const [epsRate, setEpsRate] = useState(1540);
+  const { user, isAdmin, isAnalyst } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Subtle fluctuation to make telemetry feel real and active
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setEpsRate(prev => Math.floor(1500 + Math.random() * 80));
-    }, 4000);
-    return () => clearInterval(iv);
-  }, []);
+  const roleTitle = isAdmin ? 'Lead SOC Admin' : (isAnalyst ? 'Security Analyst' : 'Security Viewer');
 
   return (
     <aside
@@ -82,22 +79,41 @@ export default function Sidebar({ activeTab, onSelectTab }) {
                 </div>
               )}
 
-              {section.items.map(({ id, label, icon: Icon, badge, badgeType }) => {
-                const isActive = activeTab === id;
+              {section.items.map(({ path, label, icon: Icon, badge, badgeType, adminOnly }) => {
+                const isActive = location.pathname === path;
                 return (
                   <button
-                    key={id}
+                    key={path}
                     className={`nav-item${isActive ? ' active' : ''}`}
-                    onClick={() => onSelectTab(id)}
-                    title={collapsed ? label : undefined}
+                    onClick={() => navigate(path)}
+                    title={collapsed ? (adminOnly ? `${label} (Admin Only)` : label) : undefined}
                     aria-current={isActive ? 'page' : undefined}
                     style={{ padding: '0.45rem 0.85rem' }}
                   >
                     <Icon size={15} style={{ flexShrink: 0, opacity: isActive ? 1 : 0.7 }} />
                     {!collapsed && (
                       <>
-                        <span className="nav-label" style={{ fontSize: '0.82rem' }}>{label}</span>
-                        {badge && (
+                        <span className="nav-label" style={{ fontSize: '0.82rem', flex: 1, textAlign: 'left' }}>
+                          {label}
+                        </span>
+                        {adminOnly && !isAdmin && (
+                          <span
+                            className="nav-badge"
+                            style={{
+                              background: 'var(--surface-elevated)',
+                              color: 'var(--sev-high)',
+                              borderColor: 'var(--sev-high-border)',
+                              fontSize: '0.6rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px'
+                            }}
+                            title="Admin Clearance Required"
+                          >
+                            <Lock size={9} /> Admin
+                          </span>
+                        )}
+                        {badge && (!adminOnly || isAdmin) && (
                           <span
                             className="nav-badge"
                             style={{
@@ -119,44 +135,13 @@ export default function Sidebar({ activeTab, onSelectTab }) {
         </nav>
       </div>
 
-      {/* Middle/Bottom Telemetry & Operator Section (Fills remaining height) */}
+      {/* Middle/Bottom Telemetry & Operator Section */}
       {!collapsed ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingBottom: '0.5rem' }}>
-          {/* Live Ingestion & Cluster Telemetry Widget */}
-          <div className="sidebar-widget">
-            <div className="sidebar-widget-header">
-              <span className="sidebar-widget-title">Cluster Telemetry</span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem', color: 'var(--sev-low)' }}>
-                <span className="status-dot status-dot-online" style={{ width: '5px', height: '5px' }} />
-                ACTIVE
-              </span>
-            </div>
-
-            <div className="sidebar-widget-row">
-              <span>Ingestion Rate</span>
-              <span className="sidebar-widget-val">{epsRate.toLocaleString()} EPS</span>
-            </div>
-
-            <div className="sidebar-widget-row">
-              <span>Collector Nodes</span>
-              <span className="sidebar-widget-val">4 / 4 Online</span>
-            </div>
-
-            <div className="sidebar-widget-row">
-              <span>Database Engine</span>
-              <span className="sidebar-widget-val">MongoDB 7.0</span>
-            </div>
-
-            <div className="sidebar-widget-row">
-              <span>Threat Level</span>
-              <span className="sidebar-widget-val" style={{ color: 'var(--sev-high)' }}>ELEVATED</span>
-            </div>
-          </div>
-
           {/* Quick Simulation Lab Shortcut */}
           <div style={{ margin: '0 0.75rem' }}>
             <button
-              onClick={() => onSelectTab('logs')}
+              onClick={() => navigate('/logs')}
               className="btn btn-secondary btn-sm"
               style={{
                 width: '100%',
@@ -192,8 +177,8 @@ export default function Sidebar({ activeTab, onSelectTab }) {
               <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {user?.username || 'admin'}
               </div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-                {isAdmin ? 'Lead SOC Admin' : 'Security Analyst'}
+              <div style={{ fontSize: '0.65rem', color: isAdmin ? 'var(--sev-high)' : 'var(--text-muted)' }}>
+                {roleTitle}
               </div>
             </div>
           </div>
@@ -201,11 +186,10 @@ export default function Sidebar({ activeTab, onSelectTab }) {
       ) : (
         /* Collapsed Icon Bar Mode */
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0' }}>
-          <span className="status-dot status-dot-online" title="Ingestion: Active" style={{ width: '7px', height: '7px' }} />
           <button
             className="btn btn-ghost btn-sm"
             style={{ padding: '0.35rem' }}
-            onClick={() => onSelectTab('logs')}
+            onClick={() => navigate('/logs')}
             title="Attack Simulator Lab"
           >
             <Terminal size={14} />

@@ -1,21 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Shield, Bell, LogOut, User, Sun, Moon, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { formatIST } from '../utils/dateUtils';
 import axios from 'axios';
-import api from '../api/client';
 
-export default function Navbar({ onNavigate, activeTab, pageTitles }) {
-  const { user, logout, isAdmin } = useAuth();
+const ROUTE_TITLES = {
+  '/command-hub':   'Command Hub',
+  '/dashboard':     'Security Overview',
+  '/logs':          'Security Logs',
+  '/detections':    'Threat Detections',
+  '/alerts':        'Detections & Alerts',
+  '/incidents':     'Incident Response',
+  '/rules':         'Detection Rules',
+  '/notifications': 'Notifications',
+  '/audit':         'Audit Trail',
+};
+
+export default function Navbar() {
+  const { user, logout, isAdmin, isAnalyst } = useAuth();
   const { toggleTheme, isDark } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [backendStatus, setBackendStatus] = useState('unknown'); // 'up' | 'down' | 'unknown'
   const [timeStr, setTimeStr] = useState('');
 
-  // UTC clock
+  // IST clock (Asia/Kolkata)
   useEffect(() => {
     const tick = () => {
-      const now = new Date();
-      setTimeStr(now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC');
+      setTimeStr(formatIST(new Date()));
     };
     tick();
     const t = setInterval(tick, 1000);
@@ -38,12 +53,22 @@ export default function Navbar({ onNavigate, activeTab, pageTitles }) {
     return () => clearInterval(iv);
   }, []);
 
-  const currentTitle = pageTitles?.[activeTab] || 'ThreatLens';
+  const currentTitle = ROUTE_TITLES[location.pathname] || 'ThreatLens SOC';
+  const roleLabel = isAdmin ? 'Admin' : (isAnalyst ? 'Analyst' : 'Viewer');
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <header className="topbar">
       {/* Brand */}
-      <button className="topbar-brand" onClick={() => onNavigate('hub')} style={{ background: 'none', border: 'none' }}>
+      <button
+        className="topbar-brand"
+        onClick={() => navigate('/command-hub')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+      >
         <span className="topbar-brand-icon">
           <Shield size={15} />
         </span>
@@ -83,10 +108,10 @@ export default function Navbar({ onNavigate, activeTab, pageTitles }) {
 
         <button
           className="btn btn-ghost btn-icon"
-          onClick={() => onNavigate('notifications')}
+          onClick={() => navigate('/notifications')}
           title="Notification settings"
           aria-label="Notification settings"
-          style={{ color: activeTab === 'notifications' ? 'var(--text-primary)' : undefined }}
+          style={{ color: location.pathname === '/notifications' ? 'var(--text-primary)' : undefined }}
         >
           <Bell size={15} />
         </button>
@@ -100,10 +125,21 @@ export default function Navbar({ onNavigate, activeTab, pageTitles }) {
         }}>
           <User size={12} style={{ color: 'var(--text-secondary)' }} />
           <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{user?.username || 'Analyst'}</span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.68rem' }}>{isAdmin ? 'Admin' : 'Analyst'}</span>
+          <span style={{
+            color: isAdmin ? 'var(--sev-high)' : 'var(--text-muted)',
+            fontSize: '0.68rem',
+            fontWeight: 600
+          }}>
+            {roleLabel}
+          </span>
         </div>
 
-        <button className="btn btn-ghost btn-icon" onClick={logout} title="Sign out" aria-label="Sign out">
+        <button
+          className="btn btn-ghost btn-icon"
+          onClick={handleLogout}
+          title="Sign out"
+          aria-label="Sign out"
+        >
           <LogOut size={15} />
         </button>
       </div>

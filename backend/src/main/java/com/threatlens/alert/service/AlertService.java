@@ -9,7 +9,10 @@ import com.threatlens.audit.model.AuditAction;
 import com.threatlens.audit.service.AuditService;
 import com.threatlens.common.exception.BadRequestException;
 import com.threatlens.common.exception.NotFoundException;
+import com.threatlens.detection.model.DetectionStatus;
 import com.threatlens.detection.model.ThreatDetection;
+import com.threatlens.detection.repository.ThreatDetectionRepository;
+import com.threatlens.log.model.LogSeverity;
 import com.threatlens.log.model.SecurityLog;
 import com.threatlens.rule.model.DetectionRule;
 import com.threatlens.notification.service.NotificationService;
@@ -32,6 +35,7 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final ThreatDetectionRepository detectionRepository;
 
     /**
      * Called by ThreatDetectionService for HIGH/CRITICAL detections. Idempotent.
@@ -57,6 +61,19 @@ public class AlertService {
         auditService.record(AuditAction.ALERT_CREATED, "Alert", saved.getId(),
                 Map.of("detectionId", detection.getId(), "severity", detection.getSeverity()));
 
+        // Update associated detection status to ALERT_CREATED
+        if (detection != null && detection.getId() != null) {
+            detectionRepository.findById(detection.getId()).ifPresent(det -> {
+                if (det.getStatus() == DetectionStatus.NEW || det.getStatus() == DetectionStatus.ACKNOWLEDGED) {
+                    det.setStatus(DetectionStatus.ALERT_CREATED);
+                    detectionRepository.save(det);
+                }
+            });
+            if (detection.getStatus() == DetectionStatus.NEW || detection.getStatus() == DetectionStatus.ACKNOWLEDGED) {
+                detection.setStatus(DetectionStatus.ALERT_CREATED);
+            }
+        }
+
         try {
             notificationService.dispatchAlertNotifications(saved, secLog, detection);
         } catch (Exception ex) {
@@ -67,14 +84,31 @@ public class AlertService {
         return saved;
     }
 
-    public Page<AlertResponse> listAlerts(AlertStatus status, Pageable pageable) {
-        if (status != null)
+    public Page<AlertResponse> listAlerts(AlertStatus status, LogSeverity severity, Pageable pageable) {
+        if (status != null && severity != null) {
+            return alertRepository.findByStatusAndSeverity(status, severity, pageable).map(this::toResponse);
+        }
+        if (status != null) {
             return alertRepository.findByStatus(status, pageable).map(this::toResponse);
+        }
+        if (severity != null) {
+            return alertRepository.findBySeverity(severity, pageable).map(this::toResponse);
+        }
         return alertRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    public Page<AlertResponse> listAlerts(AlertStatus status, Pageable pageable) {
+        return listAlerts(status, null, pageable);
     }
 
     public AlertResponse getAlert(String id) {
         return toResponse(findById(id));
+    }
+
+    public AlertResponse getAlertByDetectionId(String detectionId) {
+        return alertRepository.findByDetectionId(detectionId)
+                .map(this::toResponse)
+                .orElseThrow(() -> new NotFoundException("Alert not found for detection: " + detectionId));
     }
 
     public AlertResponse acknowledge(String id) {

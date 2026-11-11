@@ -3,6 +3,7 @@ package com.threatlens.rule.controller;
 import com.threatlens.common.response.ApiResponse;
 import com.threatlens.rule.dto.DetectionRuleRequest;
 import com.threatlens.rule.dto.DetectionRuleResponse;
+import com.threatlens.rule.model.RuleType;
 import com.threatlens.rule.service.DetectionRuleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rules")
@@ -34,10 +36,18 @@ public class DetectionRuleController {
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<DetectionRuleResponse>>> listRules(
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) RuleType type,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.success("Rules fetched",
-                ruleService.listRules(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))));
+                ruleService.listRules(enabled, type, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")))));
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success("Rule stats", ruleService.getRuleStats()));
     }
 
     @GetMapping("/enabled")
@@ -69,5 +79,12 @@ public class DetectionRuleController {
     @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ANALYST')")
     public ResponseEntity<ApiResponse<DetectionRuleResponse>> disableRule(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success("Rule disabled", ruleService.setEnabled(id, false)));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','SECURITY_ANALYST')")
+    public ResponseEntity<ApiResponse<Void>> deleteRule(@PathVariable String id) {
+        ruleService.deleteRule(id);
+        return ResponseEntity.ok(ApiResponse.success("Rule deleted", null));
     }
 }

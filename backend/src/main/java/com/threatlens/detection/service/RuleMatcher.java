@@ -89,15 +89,39 @@ public class RuleMatcher {
     private Optional<MatchResult> evaluateThreshold(SecurityLog log, DetectionRule rule, RuleCondition cond) {
         if (cond.getThresholdCount() == null || cond.getThresholdWindowSeconds() == null) return Optional.empty();
 
-        Instant windowStart = log.getTimestamp().minusSeconds(cond.getThresholdWindowSeconds());
-
-        // Count recent events from same source matching the criteria
-        Query query = new Query();
-        Criteria criteria = Criteria.where("timestamp").gte(windowStart).lte(log.getTimestamp());
-
-        if (log.getSourceIp() != null && !log.getSourceIp().isBlank()) {
-            criteria = criteria.and("sourceIp").is(log.getSourceIp());
+        // 1. IP allowlist check: If rule defines an ipAddresses allowlist, log.sourceIp must match
+        if (cond.getIpAddresses() != null && !cond.getIpAddresses().isEmpty()) {
+            String ip = log.getSourceIp();
+            if (ip == null || !cond.getIpAddresses().contains(ip)) {
+                return Optional.empty();
+            }
         }
+
+        // 2. Source-IP grouping strategy
+        boolean groupBySourceIp = Boolean.TRUE.equals(cond.getGroupBySourceIp());
+        String sourceIp = log.getSourceIp();
+
+        if (groupBySourceIp) {
+            // When groupBySourceIp is true, require a valid, non-empty source IP
+            if (sourceIp == null || sourceIp.isBlank()) {
+                return Optional.empty();
+            }
+        }
+
+        Instant logTimestamp = log.getTimestamp() != null ? log.getTimestamp() : Instant.now();
+        Instant windowStart = logTimestamp.minusSeconds(cond.getThresholdWindowSeconds());
+
+        Query query = new Query();
+        Criteria criteria = Criteria.where("timestamp").gte(windowStart).lte(logTimestamp);
+
+        // Apply sourceIp filter depending on grouping strategy vs allowlist
+        if (groupBySourceIp) {
+            criteria = criteria.and("sourceIp").is(sourceIp);
+        } else if (cond.getIpAddresses() != null && !cond.getIpAddresses().isEmpty()) {
+            // Global threshold with IP allowlist: count only events whose sourceIp is in the allowlist
+            criteria = criteria.and("sourceIp").in(cond.getIpAddresses());
+        }
+
         if (cond.getEventTypes() != null && !cond.getEventTypes().isEmpty()) {
             criteria = criteria.and("eventType").in(cond.getEventTypes());
         }

@@ -60,3 +60,16 @@ coverage/
 
 # ThreatLens root environment variables
 .env
+
+# =====================
+# Python / Collectors
+# =====================
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+*.env.*
+!*.env.example
+collector_cursor.json
+dead_letter.jsonl
+.pytest_cache/

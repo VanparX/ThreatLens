@@ -41,10 +41,35 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('threatlens_user');
   };
 
-  const isAdmin = user?.roles?.includes('ADMIN') || user?.roles?.includes('ROLE_ADMIN');
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener('threatlens:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('threatlens:unauthorized', handleUnauthorized);
+  }, []);
+
+  const roles = user?.roles || [];
+  const isAdmin = roles.includes('ADMIN') || roles.includes('ROLE_ADMIN');
+  const isAnalyst = isAdmin || roles.includes('SECURITY_ANALYST') || roles.includes('ROLE_SECURITY_ANALYST');
+  const isViewer = !isAdmin && !isAnalyst;
+  const canWrite = isAdmin || isAnalyst;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAdmin, isAuthenticated: !!token, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        isAdmin,
+        isAnalyst,
+        isViewer,
+        canWrite,
+        isAuthenticated: !!token,
+        loading
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

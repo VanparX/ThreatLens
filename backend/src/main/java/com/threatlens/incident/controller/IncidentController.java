@@ -4,6 +4,7 @@ import com.threatlens.common.response.ApiResponse;
 import com.threatlens.incident.dto.*;
 import com.threatlens.incident.model.IncidentStatus;
 import com.threatlens.incident.service.IncidentService;
+import com.threatlens.log.model.LogSeverity;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,11 +32,18 @@ public class IncidentController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<IncidentResponse>>> list(
             @RequestParam(required = false) IncidentStatus status,
+            @RequestParam(required = false) LogSeverity severity,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.success("Incidents fetched",
-                incidentService.listIncidents(status, PageRequest.of(page, Math.min(size, 100),
+                incidentService.listIncidents(status, severity, PageRequest.of(page, Math.min(size, 100),
                         Sort.by(Sort.Direction.DESC, "createdAt")))));
+    }
+
+    @GetMapping("/by-alert/{alertId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<IncidentResponse>> getByAlertId(@PathVariable String alertId) {
+        return ResponseEntity.ok(ApiResponse.success("Incident fetched", incidentService.getIncidentByAlertId(alertId)));
     }
 
     @GetMapping("/{id}")

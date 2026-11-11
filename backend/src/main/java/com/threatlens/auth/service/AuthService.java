@@ -7,6 +7,7 @@ import com.threatlens.auth.model.User;
 import com.threatlens.auth.model.UserRole;
 import com.threatlens.auth.repository.UserRepository;
 import com.threatlens.auth.security.JwtService;
+import com.threatlens.common.exception.BadRequestException;
 import com.threatlens.common.exception.ConflictException;
 import com.threatlens.common.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -93,8 +94,31 @@ public class AuthService {
                 .build();
     }
 
-    public Page<UserResponse> listUsers(Pageable pageable) {
+    public Page<UserResponse> listUsers(UserRole role, Pageable pageable) {
+        if (role != null) {
+            return userRepository.findByRole(role, pageable).map(this::toUserResponse);
+        }
         return userRepository.findAll(pageable).map(this::toUserResponse);
+    }
+
+    public Page<UserResponse> listUsers(Pageable pageable) {
+        return listUsers(null, pageable);
+    }
+
+    public Map<String, Long> getUserStats() {
+        long total = userRepository.count();
+        long adminCount = userRepository.countByRole(UserRole.ADMIN);
+        long analystCount = userRepository.countByRole(UserRole.SECURITY_ANALYST);
+        long viewerCount = userRepository.countByRole(UserRole.VIEWER);
+        long enabledCount = userRepository.countByEnabled(true);
+        return Map.of(
+                "totalUsers", total,
+                "adminCount", adminCount,
+                "analystCount", analystCount,
+                "viewerCount", viewerCount,
+                "enabledCount", enabledCount,
+                "disabledCount", total - enabledCount
+        );
     }
 
     public UserResponse getUser(String id) {
@@ -104,6 +128,9 @@ public class AuthService {
     }
 
     public UserResponse updateUserRoles(String id, Set<UserRole> roles) {
+        if (roles == null || roles.isEmpty()) {
+            throw new BadRequestException("At least one role must be assigned to the user");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found: " + id));
         Set<UserRole> oldRoles = user.getRoles();

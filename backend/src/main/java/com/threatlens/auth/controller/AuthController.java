@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -43,11 +44,19 @@ public class AuthController {
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> listUsers(
+            @RequestParam(required = false) UserRole role,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         Page<UserResponse> users = authService.listUsers(
+                role,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
         return ResponseEntity.ok(ApiResponse.success("Users fetched", users));
+    }
+
+    @GetMapping("/users/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getUserStats() {
+        return ResponseEntity.ok(ApiResponse.success("User statistics", authService.getUserStats()));
     }
 
     @GetMapping("/users/{id}")
