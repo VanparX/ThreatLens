@@ -1,10 +1,12 @@
 import React from 'react';
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAuthTransition } from '../context/AuthTransitionContext';
 import AccessDenied from './AccessDenied';
 
 export default function ProtectedRoute({ children, requiredRole, message }) {
   const { isAuthenticated, isAdmin, canWrite, loading } = useAuth();
+  const { isTransitioning, transitionMode } = useAuthTransition();
   const location = useLocation();
 
   if (loading) {
@@ -21,6 +23,11 @@ export default function ProtectedRoute({ children, requiredRole, message }) {
   }
 
   if (!isAuthenticated) {
+    // During active logout transition, keep current shell mounted underneath the overlay
+    // until onComplete explicitly navigates to /login.
+    if (isTransitioning && transitionMode === 'logout') {
+      return children ? children : <Outlet />;
+    }
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 

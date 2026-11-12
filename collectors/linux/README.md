@@ -76,7 +76,7 @@ A lightweight, zero-dependency Python 3 collector agent designed for **Arch Linu
 ### Step 1: Copy Collector Files to Arch Linux
 Copy the `collectors/linux/` directory to your Acer Predator (Arch Linux) machine:
 ```bash
-scp -r collectors/linux/ <arch_user>@10.226.72.231:~/threatlens-collector/
+scp -r collectors/linux/ <arch_user>@192.168.1.50:~/threatlens-collector/
 ```
 
 ### Step 2: Configure Environment & Permissions
@@ -88,13 +88,13 @@ chmod 600 collector.env
 nano collector.env
 ```
 
-Ensure configuration targets your MacBook:
+Ensure configuration targets your host machine:
 ```ini
-THREATLENS_BACKEND_URL=http://10.226.72.236:8080
+THREATLENS_BACKEND_URL=http://192.168.1.100:8080
 COLLECTOR_USERNAME=collector_arch_predator    # Or dedicated collector user
 COLLECTOR_PASSWORD=your_secure_password
 COLLECTOR_SOURCE_SYSTEM=archlinux-predator
-COLLECTOR_HOST_IP=10.226.72.231
+COLLECTOR_HOST_IP=192.168.1.50
 COLLECTOR_JOURNAL_UNITS=                      # Leave empty on Arch Linux to capture all sudo & sshd
 ```
 
@@ -102,7 +102,7 @@ COLLECTOR_JOURNAL_UNITS=                      # Leave empty on Arch Linux to cap
 ```bash
 python3 test_collector.py
 ```
-*Expected Output: `Ran 20 tests ... OK`.*
+*Expected Output: `Ran 30 tests ... OK`.*
 
 ### Step 4: Run Collector in Foreground
 ```bash
@@ -122,7 +122,7 @@ sudo -k whoami
 ### Scenario B: SSH Brute Force Detection
 From another machine on the network, trigger 3 failed SSH logins:
 ```bash
-ssh invaliduser@10.226.72.231
+ssh invaliduser@192.168.1.50
 ```
 *Result*: The 3rd failure from the same IP within 60s triggers the `"SSH Brute Force Detection"` rule, creating a **HIGH Alert** and sending an email advisory.
 

@@ -1,0 +1,167 @@
+/* ==========================================================================
+   ThreatLens — AuthTransition.css
+   Concept A: Precision SOC Console — Authentication Transitions
+   ========================================================================== */
+
+.tl-auth-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: var(--tl-bg-canvas, #0B0D10);
+  background-image: 
+    radial-gradient(circle at 50% 40%, rgba(99, 102, 241, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, var(--tl-bg-canvas, #0B0D10) 0%, var(--tl-bg-surface, #13171D) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.3s ease-out;
+}
+
+.tl-auth-transition-overlay.mode-logout {
+  background-image: 
+    radial-gradient(circle at 50% 40%, rgba(239, 68, 68, 0.06) 0%, transparent 60%),
+    linear-gradient(180deg, var(--tl-bg-canvas, #0B0D10) 0%, var(--tl-bg-surface, #13171D) 100%);
+}
+
+.tl-auth-transition-content {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+}
+
+/* --- Telemetry Header --- */
+.tl-auth-transition-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.tl-auth-transition-brand {
+  font-size: 0.75rem;
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--tl-accent-primary, #6366F1);
+  text-transform: uppercase;
+}
+
+/* --- SVG Visualization Canvas --- */
+.tl-auth-transition-canvas {
+  width: 100%;
+  max-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* --- Status Stage HUD --- */
+.tl-auth-transition-hud {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.tl-auth-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--tl-border-default, #282E38);
+  background: var(--tl-bg-surface-elev, #1A1F26);
+  color: var(--tl-text-primary, #F1F5F9);
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.tl-auth-stage-badge.status-verified {
+  border-color: rgba(99, 102, 241, 0.4);
+  color: var(--tl-accent-hover, #818CF8);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
+}
+
+.tl-auth-stage-badge.status-established {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10B981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+}
+
+.tl-auth-stage-badge.status-terminating {
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #F59E0B;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+}
+
+.tl-auth-stage-badge.status-closed {
+  border-color: var(--tl-border-subtle, #1E232B);
+  color: var(--tl-text-muted, #78889B);
+}
+
+.tl-auth-stage-subtitle {
+  font-size: 0.78rem;
+  color: var(--tl-text-secondary, #94A3B8);
+  margin: 0;
+  line-height: 1.4;
+  max-width: 440px;
+}
+
+/* --- Stepper Progress Ticks --- */
+.tl-auth-progress-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.tl-auth-step-dot {
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--tl-border-subtle, #1E232B);
+  transition: all 0.3s ease;
+}
+
+.tl-auth-step-dot.active {
+  background: var(--tl-accent-primary, #6366F1);
+  box-shadow: 0 0 8px var(--tl-accent-glow, rgba(99, 102, 241, 0.5));
+}
+
+.tl-auth-step-dot.active.logout-step {
+  background: #F59E0B;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.tl-auth-step-dot.completed {
+  background: #10B981;
+}
+
+/* ==========================================================================
+   Reduced Motion Accessibility Preference
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .tl-auth-transition-overlay,
+  .tl-auth-stage-badge,
+  .tl-auth-step-dot {
+    transition: none !important;
+    animation: none !important;
+  }
+}
